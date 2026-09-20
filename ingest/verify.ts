@@ -378,6 +378,19 @@ check("a prefix that comes back full is split further", async () => {
   }
 });
 
+check("a city offered with and without a leading space is one city", async () => {
+  // The register's own list holds both. Queried separately they return the
+  // identical rows, so the walk does twice the work for nothing.
+  const fetchPrefix = async (prefix: string) =>
+    prefix === "t" ? [" Toronto", "Toronto", " Timmins"] : [];
+  const found = await allRegisterCities(fetchPrefix);
+  assert.deepEqual(
+    found.filter((c) => c.toLowerCase().includes("toronto")),
+    ["Toronto"],
+    "Toronto should appear once, trimmed",
+  );
+  assert.ok(!found.some((c) => c !== c.trim()), "no city should carry whitespace");
+});
 
 console.log("\nThe register's specialty labels");
 // Exactly as the register's own form spells them, read off the live page.

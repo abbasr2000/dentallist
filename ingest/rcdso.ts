@@ -495,7 +495,15 @@ export async function allRegisterCities(
     } catch {
       return; // one failed prefix is not worth abandoning the run over
     }
-    for (const name of results) found.add(name);
+    // The register returns the same city both with and without a leading
+    // space — " Toronto" and "Toronto" are two entries in its own list. Left
+    // as they are, each is queried separately and returns the identical 2,482
+    // rows, so the walk does twice the work and the output carries every
+    // record twice. It trims its own input, so the two are one city.
+    for (const name of results) {
+      const trimmed = name.trim();
+      if (trimmed) found.add(trimmed);
+    }
 
     if (results.length < LOOKS_CAPPED || prefix.length >= MAX_PREFIX) return;
     for (const letter of letters) {
