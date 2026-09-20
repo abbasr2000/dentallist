@@ -479,7 +479,12 @@ check("no amount of self-description reaches a registered specialist", () => {
 
 /** Runs `fn` with exactly the given host variables set, then puts them back. */
 function withHostEnv(env: Record<string, string | undefined>, fn: () => void) {
-  const keys = ["NEXT_PUBLIC_SITE_URL", "VERCEL_PROJECT_PRODUCTION_URL", "VERCEL"];
+  const keys = [
+    "NEXT_PUBLIC_SITE_URL",
+    "VERCEL_PROJECT_PRODUCTION_URL",
+    "VERCEL_URL",
+    "VERCEL",
+  ];
   const before = Object.fromEntries(keys.map((k) => [k, process.env[k]]));
   try {
     for (const k of keys) delete process.env[k];
@@ -520,8 +525,27 @@ check("a local build falls back to the placeholder", () => {
   withHostEnv({}, () => assert.equal(resolveSiteUrl(), "https://example.invalid"));
 });
 
-check("a Vercel build with no host fails rather than shipping the placeholder", () => {
-  withHostEnv({ VERCEL: "1" }, () => assert.throws(() => resolveSiteUrl(), /example\.invalid/));
+check("the deployment host is used rather than the placeholder", () => {
+  withHostEnv({ VERCEL_URL: "dentallist-abc123.vercel.app", VERCEL: "1" }, () =>
+    assert.equal(resolveSiteUrl(), "https://dentallist-abc123.vercel.app"),
+  );
+});
+
+check("the stable production host beats the deployment's own", () => {
+  withHostEnv(
+    {
+      VERCEL_PROJECT_PRODUCTION_URL: "dentallist.vercel.app",
+      VERCEL_URL: "dentallist-abc123.vercel.app",
+      VERCEL: "1",
+    },
+    () => assert.equal(resolveSiteUrl(), "https://dentallist.vercel.app"),
+  );
+});
+
+check("an explicit host without a scheme still gets one", () => {
+  withHostEnv({ NEXT_PUBLIC_SITE_URL: "ontariodental.ca" }, () =>
+    assert.equal(resolveSiteUrl(), "https://ontariodental.ca"),
+  );
 });
 
 check("blank host variables are treated as unset, not as a host", () => {
