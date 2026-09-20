@@ -1,0 +1,59 @@
+name: Deploy to Vercel
+
+# Two ways to deploy, and you only need one of them.
+#
+#  1. Connect the repository at vercel.com/new. Vercel then builds on every
+#     push by itself and this workflow is unnecessary.
+#  2. Add a VERCEL_TOKEN, VERCEL_ORG_ID and VERCEL_PROJECT_ID to the repo's
+#     Actions secrets and this workflow deploys instead. Useful when the build
+#     should only run after the ingest has refreshed the data.
+#
+# The workflow skips itself when the token is absent, so it is harmless to
+# leave in place if you take the first route.
+
+on:
+  push:
+    branches: [claude/project-thread-h23ie4, main]
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["Ingest Ontario clinics"]
+    types: [completed]
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for a Vercel token
+        id: check
+        run: |
+          if [ -n "$VERCEL_TOKEN" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "No VERCEL_TOKEN set — connect the repo at vercel.com/new instead." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - uses: actions/setup-node@v4
+        if: steps.check.outputs.ready == 'true'
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Deploy
+        if: steps.check.outputs.ready == 'true'
+        run: |
+          npm ci
+          npx vercel@latest pull --yes --environment=production --token="$VERCEL_TOKEN"
+          npx vercel@latest build --prod --token="$VERCEL_TOKEN"
+          URL=$(npx vercel@latest deploy --prebuilt --prod --token="$VERCEL_TOKEN")
+          echo "Deployed to $URL" >> "$GITHUB_STEP_SUMMARY"

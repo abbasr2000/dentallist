@@ -81,76 +81,94 @@ const DEFAULT_CITIES = [
   "Thunder Bay", "Oakville", "Burlington", "Milton", "Newmarket",
 ];
 
-interface RawRow {
-  text: string;
-  html: string;
-}
-
 /**
- * Pull a clinic record out of one result row.
+ * One dentist's row on a results page.
  *
- * Written against the text content rather than the markup so that a redesign
- * of the register breaks the selectors above and nothing else. Every field is
- * optional: a row we cannot fully parse still yields a name, which is better
- * than dropping the dentist entirely.
+ * The register's markup is better than most: the practice name and street
+ * address sit in their own <span>s inside an <address>, and the registration
+ * number and phone are in <dl> pairs. Parsing the structure rather than the
+ * text means a name containing a number, or an address with no number, comes
+ * out right.
+ *
+ *   <section class="row hide">
+ *     <h2><a href="...dentist?id=120016"> - Heena Kauser</a></h2>
+ *     <dl><dt>Registration Number:</dt><dd>120016</dd></dl>
+ *     <dl><dt>Status:</dt><dd>Member</dd></dl>
+ *     <address><span>Markham Gateway Dentistry</span><span>2855 Markham Rd #108</span></address>
+ *     <dl><dt>Phone:</dt><dd><a href="tel:4163210005">416-321-0005</a></dd></dl>
+ *   </section>
+ *
+ * The register also publishes conditions and misconduct findings against some
+ * dentists, in a `div.concerns` on the same row. We deliberately do not read
+ * it. Republishing a regulator's discipline record on a commercial directory
+ * is a different product with different obligations, and it is not what this
+ * one is for.
  */
-export function parseResultRow(row: RawRow): SourceRecord | undefined {
-  const text = row.text.replace(/\s+/g, " ").trim();
-  if (!text) return undefined;
+export const ROW_SELECTOR = "section.row.hide";
 
-  const registration = text.match(/\b(?:registration|reg\.?)\s*(?:no\.?|number|#)?\s*:?\s*(\d{4,6})\b/i)?.[1];
-  const phone = normalizePhone(text.match(/\(?\b\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}\b/)?.[0]);
-  const postalCode = normalizePostal(
-    text.match(/\b[A-Z]\d[A-Z][\s-]?\d[A-Z]\d\b/i)?.[0],
-  );
+/** The register lists dentists; a clinic is what several of them share. */
+type RowElement = Parameters<cheerio.CheerioAPI>[0];
 
-  const SPECIALTIES = [
-    "Endodontics",
-    "Oral and Maxillofacial Surgery",
-    "Oral Medicine",
-    "Oral Pathology",
-    "Oral Radiology",
-    "Orthodontics and Dentofacial Orthopedics",
-    "Pediatric Dentistry",
-    "Periodontics",
-    "Prosthodontics",
-    "Dental Anaesthesia",
-    "Dental Public Health",
-  ];
-  const specialty = SPECIALTIES.find((s) =>
-    text.toLowerCase().includes(s.toLowerCase()),
-  );
+export function parseRow($: cheerio.CheerioAPI, el: RowElement): SourceRecord | undefined {
+  const row = $(el);
 
-  const permits = {
-    sedation: /sedation|anaesthes|anesthes/i.test(text),
-    cbct: /\bCT\b|cone beam|CBCT/i.test(text),
+  const definition = (label: RegExp): string | undefined => {
+    let found: string | undefined;
+    row.find("dl").each((_, dl) => {
+      if (found) return;
+      const term = $(dl).find("dt").first().text().trim();
+      if (!label.test(term)) return;
+      const value = $(dl).find("dd").first().text().replace(/\s+/g, " ").trim();
+      if (value) found = value;
+    });
+    return found;
   };
 
-  // The practice name is normally the line after the dentist's name. Take the
-  // first segment that looks like a business rather than a person.
-  const segments = text.split(/\s{2,}|·|\|/).map((s) => s.trim()).filter(Boolean);
-  const practiceName = segments.find((s) =>
-    /dental|dentistry|clinic|centre|center|orthodont|perio|endo/i.test(s),
+  const registration = definition(/registration/i);
+  const status = definition(/status/i);
+  const phone = normalizePhone(definition(/phone/i));
+
+  // "  - Heena Kauser" — the register puts the title before the dash, and it
+  // is empty for a general dentist.
+  const personName = row
+    .find("h2")
+    .first()
+    .text()
+    .replace(/\s+/g, " ")
+    .replace(/^\s*-\s*/, "")
+    .trim();
+
+  const addressBlock = row.find("address").first();
+  const lines = addressBlock
+    .find("span")
+    .map((_, span) => $(span).text().replace(/\s+/g, " ").trim())
+    .get()
+    .filter(Boolean);
+
+  const practiceName = lines[0];
+  const street = lines.slice(1).join(", ") || undefined;
+  const postalCode = normalizePostal(
+    addressBlock.text().match(/\b[A-Z]\d[A-Z][\s-]?\d[A-Z]\d\b/i)?.[0],
   );
-  const personName = segments.find((s) => /^(dr\.?|doctor)\s/i.test(s)) ?? segments[0];
 
   const name = practiceName ?? personName;
   if (!name) return undefined;
 
-  const address = segments.find((s) => /\d+\s+\w+/.test(s) && !/^\(?\d{3}/.test(s));
+  // A dentist with no practice on the register is a real registration but not
+  // a clinic, so there is nothing for the directory to list.
+  if (!practiceName) return undefined;
 
   return {
     source: "rcdso",
-    sourceId: registration ?? slugify(`${name}-${phone ?? ""}`),
-    name,
-    address,
+    sourceId: slugify(`${practiceName}-${street ?? ""}-${phone ?? ""}`),
+    name: practiceName,
+    address: street,
     postalCode,
     phone,
     practitioners: personName
-      ? [{ fullName: personName, registrationNumber: registration, specialty }]
+      ? [{ fullName: personName, registrationNumber: registration }]
       : undefined,
-    permits,
-    raw: { text, html: row.html },
+    raw: { registration, status, personName, practiceName, street, phone },
   };
 }
 
@@ -231,114 +249,203 @@ async function probe(city: string): Promise<void> {
 }
 
 /**
- * Every record the register returns for one city.
+ * Every practice the register lists for one city.
  *
- * Paginates until a page repeats or yields nothing. The parser works off each
- * row's text rather than its markup, so a redesign of the register costs us
- * ROW_SELECTORS and nothing else.
+ * The register returns a city in a single response — 731 dentists for
+ * Scarborough in one 3.3MB page — so there is no pagination to walk. The
+ * "Next" link on the results page carries no href; it is decoration.
  */
-const ROW_SELECTORS = [
-  "table tbody tr",
-  "[class*='result' i] li",
-  "[class*='dentist' i][class*='card' i]",
-  "[class*='search-result' i]",
-];
-
 export async function searchCity(city: string): Promise<SourceRecord[]> {
+  const html = await get(searchUrl({ City: city, DetailsCode: "All" }));
+  const $ = cheerio.load(html);
+
   const records: SourceRecord[] = [];
-  const seen = new Set<string>();
-
-  for (let pageNumber = 1; pageNumber <= 200; pageNumber++) {
-    const url = searchUrl({
-      City: city,
-      DetailsCode: "All",
-      ...(pageNumber > 1 ? { page: String(pageNumber) } : {}),
-    });
-
-    const html = await get(url);
-    const $ = cheerio.load(html);
-
-    const rows = ROW_SELECTORS.flatMap((selector) =>
-      $(selector)
-        .map((_, el) => ({
-          text: $(el).text(),
-          html: $(el).html() ?? "",
-        }))
-        .get(),
-    );
-    if (rows.length === 0) break;
-
-    let added = 0;
-    for (const row of rows) {
-      const record = parseResultRow(row);
-      if (!record) continue;
-      const key = `${record.sourceId}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      record.city ??= city;
-      records.push(record);
-      added++;
-    }
-
-    // A page that adds nothing new means we have looped back on ourselves,
-    // which is how a register without a "next" link tells us it is done.
-    if (added === 0) break;
-    await sleep(POLITE_DELAY_MS);
-  }
-
+  $(ROW_SELECTOR).each((_, el) => {
+    const record = parseRow($, el);
+    if (!record) return;
+    record.city ??= city;
+    records.push(record);
+  });
   return records;
+}
+
+/**
+ * The registration numbers holding a given specialty or sedation permit.
+ *
+ * This is the part worth having. The register's own search filters by
+ * specialty and by sedation permit type, so instead of inferring a clinic's
+ * strengths from its marketing copy we ask the regulator directly and get back
+ * a list of registration numbers. Joining that to the city results gives every
+ * practice its register-backed evidence, which is the whole basis of the
+ * ranking.
+ */
+async function registrationsMatching(params: Record<string, string>): Promise<Map<string, string>> {
+  const html = await get(searchUrl({ ...params, DetailsCode: "All" }));
+  const $ = cheerio.load(html);
+
+  const found = new Map<string, string>();
+  $(ROW_SELECTOR).each((_, el) => {
+    const row = $(el);
+    let registration: string | undefined;
+    row.find("dl").each((_, dl) => {
+      if (registration) return;
+      if (!/registration/i.test($(dl).find("dt").first().text())) return;
+      registration = $(dl).find("dd").first().text().trim();
+    });
+    const practice = row.find("address").first().find("span").first().text().replace(/\s+/g, " ").trim();
+    if (registration) found.set(registration, practice);
+  });
+  return found;
+}
+
+/** The option values the register's own refine-search form offers. */
+export function selectOptions($: cheerio.CheerioAPI, name: string): Array<{ value: string; label: string }> {
+  return $(`select[name="${name}"] option`)
+    .map((_, option) => ({
+      value: ($(option).attr("value") ?? "").trim(),
+      label: $(option).text().replace(/\s+/g, " ").trim(),
+    }))
+    .get()
+    .filter((o) => o.value && !/^all$/i.test(o.label));
 }
 
 async function main() {
   const args = process.argv.slice(2);
   const valueFor = (flag: string) => {
     const i = args.indexOf(flag);
-    return i >= 0 ? args[i + 1] : undefined;
+    const next = args[i + 1];
+    return i >= 0 && next && !next.startsWith("--") ? next : undefined;
   };
 
   if (args.includes("--probe")) {
-    await probe(valueFor("--probe")?.startsWith("--") ? "Scarborough" : valueFor("--probe") ?? "Scarborough");
+    await probe(valueFor("--probe") ?? "Scarborough");
     return;
   }
 
   if (args.includes("--cities")) {
-    // The predictive endpoint answers prefixes, so walking the alphabet (and
-    // two-letter prefixes for the crowded letters) enumerates the register's
-    // own city list without us inventing one.
     const found = new Set<string>();
-    const letters = "abcdefghijklmnopqrstuvwxyz".split("");
-    for (const letter of letters) {
+    for (const letter of "abcdefghijklmnopqrstuvwxyz") {
       for (const name of await citiesMatching(letter)) found.add(name);
       await sleep(400);
     }
     const sorted = [...found].sort();
     console.log(`${sorted.length} cities on the register`);
     writeJson("ingest/out/rcdso-cities.json", sorted);
-    console.log("Wrote ingest/out/rcdso-cities.json");
     return;
   }
 
-  const cities = valueFor("--city") ? [valueFor("--city")!] : DEFAULT_CITIES;
+  const cities = valueFor("--city")
+    ? [valueFor("--city")!]
+    : await allRegisterCities();
+
+  console.log(`Walking ${cities.length} cities\n`);
 
   const all: SourceRecord[] = [];
-  for (const city of cities) {
-    process.stdout.write(`${city}… `);
+  let failures = 0;
+  for (const [index, city] of cities.entries()) {
     try {
       const records = await searchCity(city);
-      console.log(`${records.length} records`);
       all.push(...records);
+      if (records.length > 0 || index % 25 === 0) {
+        console.log(`  ${String(index + 1).padStart(4)}/${cities.length}  ${city}: ${records.length}`);
+      }
     } catch (error) {
-      console.log(`failed: ${String(error)}`);
+      failures++;
+      console.log(`  ${city} failed: ${(error as Error).message}`);
     }
     await sleep(POLITE_DELAY_MS);
   }
 
-  const specialists = all.filter((r) => r.practitioners?.[0]?.specialty).length;
-  const sedation = all.filter((r) => r.permits?.sedation).length;
-  console.log(`\n${all.length} records, ${specialists} with a specialty, ${sedation} mentioning sedation`);
+  console.log(`\n${all.length} practice rows, ${failures} cities failed`);
+
+  await applyRegisterEvidence(all);
 
   writeJson("ingest/out/rcdso.json", all);
-  console.log("Wrote ingest/out/rcdso.json");
+  console.log(`Wrote ingest/out/rcdso.json`);
+}
+
+/**
+ * The register's own list of cities, which is 529 entries and includes
+ * spellings we would not have guessed. Falls back to the short hand-written
+ * list only if the predictive endpoint is unavailable.
+ */
+async function allRegisterCities(): Promise<string[]> {
+  const found = new Set<string>();
+  for (const letter of "abcdefghijklmnopqrstuvwxyz") {
+    try {
+      for (const name of await citiesMatching(letter)) found.add(name);
+    } catch {
+      /* one failed prefix is not worth abandoning the run over */
+    }
+    await sleep(400);
+  }
+  return found.size > 0 ? [...found].sort() : DEFAULT_CITIES;
+}
+
+/**
+ * Tag every record with what the regulator says about it.
+ *
+ * Runs one province-wide query per specialty and per sedation permit type,
+ * then joins on registration number. A dozen extra requests buys the evidence
+ * that distinguishes this directory from every other one.
+ */
+async function applyRegisterEvidence(records: SourceRecord[]): Promise<void> {
+  const formPage = cheerio.load(await get(searchUrl({ City: "Toronto", DetailsCode: "All" })));
+
+  const specialties = selectOptions(formPage, "MbrSpecialty");
+  const sedationTypes = selectOptions(formPage, "SedationType");
+  console.log(`\n${specialties.length} specialties and ${sedationTypes.length} sedation types on the form`);
+
+  const byRegistration = new Map<string, SourceRecord[]>();
+  for (const record of records) {
+    for (const person of record.practitioners ?? []) {
+      if (!person.registrationNumber) continue;
+      const list = byRegistration.get(person.registrationNumber) ?? [];
+      list.push(record);
+      byRegistration.set(person.registrationNumber, list);
+    }
+  }
+
+  for (const specialty of specialties) {
+    try {
+      const matches = await registrationsMatching({ MbrSpecialty: specialty.value });
+      let tagged = 0;
+      for (const registration of matches.keys()) {
+        for (const record of byRegistration.get(registration) ?? []) {
+          const person = record.practitioners?.find((p) => p.registrationNumber === registration);
+          if (person && !person.specialty) {
+            person.specialty = specialty.label;
+            tagged++;
+          }
+        }
+      }
+      console.log(`  ${specialty.label}: ${matches.size} registered, ${tagged} matched to a practice`);
+    } catch (error) {
+      console.log(`  ${specialty.label} failed: ${(error as Error).message}`);
+    }
+    await sleep(POLITE_DELAY_MS);
+  }
+
+  for (const sedation of sedationTypes) {
+    try {
+      const matches = await registrationsMatching({ SedationType: sedation.value });
+      let tagged = 0;
+      for (const registration of matches.keys()) {
+        for (const record of byRegistration.get(registration) ?? []) {
+          record.permits = { ...record.permits, sedation: true };
+          tagged++;
+        }
+      }
+      console.log(`  sedation — ${sedation.label}: ${matches.size} permits, ${tagged} matched`);
+    } catch (error) {
+      console.log(`  sedation ${sedation.label} failed: ${(error as Error).message}`);
+    }
+    await sleep(POLITE_DELAY_MS);
+  }
+
+  const withSpecialty = records.filter((r) => r.practitioners?.some((p) => p.specialty)).length;
+  const withSedation = records.filter((r) => r.permits?.sedation).length;
+  console.log(`\n${withSpecialty} rows carry a specialist, ${withSedation} carry a sedation permit`);
 }
 
 // Guarded so that importing this module (for its exported parsers, or from a

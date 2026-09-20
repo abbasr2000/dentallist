@@ -7,7 +7,8 @@ import assert from "node:assert";
 import { addressKey, normalizePhone, normalizePostal, slugify, distanceMetres } from "./lib";
 import { htmlToText, pickInternalLinks } from "./crawl";
 import { verifyQuote } from "./extract";
-import { parseResultRow } from "./rcdso";
+import * as cheerio from "cheerio";
+import { parseRow, ROW_SELECTOR, selectOptions } from "./rcdso";
 import { mergeRecords } from "./merge";
 import { assignPlace, resolveCity, MAX_ASSIGN_KM } from "./places";
 import { scoreProcedure } from "../lib/strength";
@@ -127,20 +128,73 @@ check("a too-short quote is rejected", () => {
 });
 
 console.log("\nRCDSO row parsing");
-check("registration number, phone and specialty are pulled out", () => {
-  const row = parseResultRow({
-    text: "Dr. Jane Smith  Registration No: 12345  Scarborough Dental Centre  3630 Lawrence Ave E  M1G 1P6  (416) 431-4000  Periodontics",
-    html: "",
-  });
-  assert.ok(row, "should parse");
-  assert.equal(row!.practitioners?.[0].registrationNumber, "12345");
-  assert.equal(row!.phone, "4164314000");
-  assert.equal(row!.postalCode, "M1G 1P6");
-  assert.equal(row!.practitioners?.[0].specialty, "Periodontics");
+// Markup copied from a live results page (Scarborough, 2026-09-20).
+const REAL_ROW = `
+<section class="row hide">
+  <h2 class="col-12"><a href="/find-a-dentist/search-results/dentist?id=120016"> - Heena Kauser</a></h2>
+  <div class="col-12"><div class="row">
+    <div class="col-12 col-md-5 mb-2"><dl><dt>Registration Number:</dt><dd>120016</dd></dl></div>
+    <div class="col-12 col-md-5 mb-2"><dl><dt>Status:</dt><dd>Member</dd></dl></div>
+  </div>
+  <div class="row mt-3-mobile">
+    <div class="col-md-5 ml-mobile-5"><div><dl><dt>Phone:</dt>
+      <dd><a href="tel:4163210005"> 416-321-0005 </a></dd></dl></div></div>
+    <address class="col-md-5 d-none d-md-block"><div class="ms-md-5">
+      <span>Markham Gateway Dentistry</span><br><span>2855 Markham Rd #108</span>
+    </div></address>
+  </div></div>
+</section>`;
+
+function firstRow(html: string) {
+  const $ = cheerio.load(html);
+  const el = $(ROW_SELECTOR).first()[0];
+  return el ? parseRow($, el) : undefined;
+}
+
+check("a real register row yields practice, address, phone and registration", () => {
+  const row = firstRow(REAL_ROW);
+  assert.ok(row, "no record parsed");
+  assert.equal(row.name, "Markham Gateway Dentistry");
+  assert.equal(row.address, "2855 Markham Rd #108");
+  assert.equal(row.phone, "4163210005");
+  assert.equal(row.practitioners?.[0]?.fullName, "Heena Kauser");
+  assert.equal(row.practitioners?.[0]?.registrationNumber, "120016");
 });
+
+check("the leading dash on a general dentist's name is dropped", () => {
+  assert.ok(!firstRow(REAL_ROW)?.practitioners?.[0]?.fullName.startsWith("-"));
+});
+
+check("a dentist with no practice on the register is not a clinic", () => {
+  const row = firstRow(REAL_ROW.replace(/<address[\s\S]*?<\/address>/, ""));
+  assert.equal(row, undefined);
+});
+
+check("misconduct notices on a row are not read", () => {
+  const withConcerns = REAL_ROW.replace(
+    "</section>",
+    '<div class="concerns col-12"><strong class="title">Conditions, Concerns and/or Professional Misconduct</strong></div></section>',
+  );
+  const row = firstRow(withConcerns);
+  assert.ok(row);
+  assert.ok(!JSON.stringify(row).toLowerCase().includes("misconduct"));
+});
+
 check("an empty row yields nothing", () => {
-  assert.equal(parseResultRow({ text: "   ", html: "" }), undefined);
+  assert.equal(firstRow('<section class="row hide"></section>'), undefined);
 });
+
+check("the refine-search selects are readable, and All is not an option", () => {
+  const $ = cheerio.load(`<select name="MbrSpecialty">
+    <option value="">All</option>
+    <option value="END">Endodontics</option>
+    <option value="PER">Periodontics</option>
+  </select>`);
+  const options = selectOptions($, "MbrSpecialty");
+  assert.deepEqual(options.map((o) => o.value), ["END", "PER"]);
+  assert.equal(options[0].label, "Endodontics");
+});
+
 
 console.log("\nMerging");
 const rec = (o: Partial<SourceRecord>): SourceRecord => ({
