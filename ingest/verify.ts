@@ -393,6 +393,47 @@ check("no procedure key can be mistaken for a city", () => {
   assert.deepEqual(suspicious, [], `procedure keys that are also cities: ${suspicious.join(", ")}`);
 });
 
+
+console.log("\nOwner claims");
+check("a claim cannot outrank the regulator", () => {
+  const owner = scoreProcedure([{
+    kind: "owner-verified" as const,
+    detail: "we place implants",
+    provenance: { source: "owner" as const, checkedAt: "2026-09-20" },
+  }]);
+  const register = scoreProcedure([{
+    kind: "rcdso-specialist" as const,
+    detail: "registered specialist in periodontics",
+    provenance: { source: "rcdso" as const, checkedAt: "2026-09-20" },
+  }]);
+  assert.ok(register > owner, `register ${register} should beat owner ${owner}`);
+});
+
+check("no amount of self-description reaches a registered specialist", () => {
+  // Ten owner claims plus ten website mentions, against one registration.
+  const selfDescribed = scoreProcedure([
+    ...Array.from({ length: 10 }, () => ({
+      kind: "owner-verified" as const,
+      detail: "we do this",
+      provenance: { source: "owner" as const, checkedAt: "2026-09-20" },
+    })),
+    ...Array.from({ length: 10 }, () => ({
+      kind: "site-detail" as const,
+      detail: "listed on their site",
+      provenance: { source: "clinic-site" as const, quote: "we offer this service here", checkedAt: "2026-09-20" },
+    })),
+  ]);
+  const oneRegistration = scoreProcedure([{
+    kind: "rcdso-specialist" as const,
+    detail: "registered specialist",
+    provenance: { source: "rcdso" as const, checkedAt: "2026-09-20" },
+  }]);
+  assert.ok(
+    selfDescribed < oneRegistration,
+    `self-described ${selfDescribed} must stay below one registration ${oneRegistration}`,
+  );
+});
+
 Promise.all(pending).then(() => {
   console.log(`\n${passed} checks passed${process.exitCode ? " (with failures above)" : ""}\n`);
 });

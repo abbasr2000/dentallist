@@ -3,6 +3,7 @@ import { join } from "node:path";
 import type { City, Clinic, Evidence, OpeningHours, Practitioner, Provenance } from "@/lib/types";
 import { buildOffering } from "@/lib/strength";
 import { proceduresForSpecialty, type ProcedureKey } from "@/lib/procedures";
+import { CLAIMED, ownerEvidence, ownerProvenance, type ClaimedListing } from "./claimed";
 
 /**
  * The real dataset, read at build time from the ingest output.
@@ -126,10 +127,45 @@ function evidenceFor(record: MergedClinic): Map<ProcedureKey, Evidence[]> {
   return byProcedure;
 }
 
+/**
+ * The owner's claim on a record, if there is one.
+ *
+ * Matched on phone first because it is the most stable thing a practice has —
+ * a clinic renames and moves suites far more often than it changes its number.
+ * Street address plus city is the fallback for a record with no phone.
+ */
+function claimFor(record: MergedClinic): ClaimedListing | undefined {
+  const normalise = (value: string) =>
+    value.toLowerCase().replace(/\b(avenue|ave)\b/g, "ave")
+      .replace(/\b(east|e)\b/g, "e").replace(/[^a-z0-9]+/g, " ").trim();
+
+  return CLAIMED.find((listing) => {
+    if (listing.matchPhone && record.phone) {
+      if (listing.matchPhone.replace(/\D/g, "") === record.phone.replace(/\D/g, "")) return true;
+    }
+    if (listing.matchAddress && record.address && record.citySlug) {
+      return (
+        listing.matchAddress.citySlug === record.citySlug &&
+        normalise(listing.matchAddress.address) === normalise(record.address)
+      );
+    }
+    return false;
+  });
+}
+
 function toClinic(record: MergedClinic): Clinic | undefined {
   if (!record.citySlug || !record.slug || !record.name) return undefined;
 
+  const claim = claimFor(record);
   const evidence = evidenceFor(record);
+
+  // An owner's word about what they treat is evidence, and weighted as such:
+  // 15 against a register specialty's 45. It never outranks the regulator.
+  for (const offered of claim?.procedures ?? []) {
+    const list = evidence.get(offered.procedure) ?? [];
+    list.push(ownerEvidence(claim!, offered.detail));
+    evidence.set(offered.procedure, list);
+  }
   const practitioners: Practitioner[] = (record.practitioners ?? []).map((person) => ({
     name: person.fullName,
     registrationNumber: person.registrationNumber,
@@ -141,26 +177,34 @@ function toClinic(record: MergedClinic): Clinic | undefined {
     },
   }));
 
+  const sources = provenanceFor(record);
+  if (claim) sources.unshift(ownerProvenance(claim));
+
   return {
     slug: record.slug,
-    name: record.name,
+    // An owner's own spelling of their practice name beats a mapper's.
+    name: claim?.name ?? record.name,
     citySlug: record.citySlug,
     address: record.address,
     postalCode: record.postalCode,
     lat: record.lat,
     lng: record.lng,
     phone: record.phone,
-    website: record.website,
-    email: record.email,
-    hours: record.hours ?? [],
-    languages: {
-      value: record.languages ?? [],
-      provenance: { source: "osm", checkedAt: record.lastSeen ?? CHECKED },
-    },
+    website: claim?.website ?? record.website,
+    email: claim?.email ?? record.email,
+    hours: claim?.hours ?? record.hours ?? [],
+    languages: claim?.languages
+      ? { value: claim.languages, provenance: ownerProvenance(claim) }
+      : {
+          value: record.languages ?? [],
+          provenance: { source: "osm", checkedAt: record.lastSeen ?? CHECKED },
+        },
     procedures: [...evidence.entries()].map(([procedure, list]) => buildOffering(procedure, list)),
     practitioners,
     accessibility:
-      record.wheelchair === undefined
+      claim?.wheelchairAccessible !== undefined
+        ? { wheelchairAccessible: { value: claim.wheelchairAccessible, provenance: ownerProvenance(claim) } }
+        : record.wheelchair === undefined
         ? {}
         : {
             wheelchairAccessible: {
@@ -168,10 +212,14 @@ function toClinic(record: MergedClinic): Clinic | undefined {
               provenance: { source: "osm", checkedAt: record.lastSeen ?? CHECKED },
             },
           },
-    payment: {},
-    availability: {},
-    tier: "unclaimed",
-    sources: provenanceFor(record),
+    payment: claim?.directBilling === undefined
+      ? {}
+      : { directBilling: { value: claim.directBilling, provenance: ownerProvenance(claim) } },
+    availability: claim?.accepting === undefined
+      ? {}
+      : { acceptingNewPatients: { value: claim.accepting, provenance: ownerProvenance(claim) } },
+    tier: claim ? "claimed" : "unclaimed",
+    sources,
     lastUpdated: record.lastSeen ?? CHECKED,
   };
 }
