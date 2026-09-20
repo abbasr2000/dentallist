@@ -1,0 +1,99 @@
+name: Ingest Ontario clinics
+
+# This repository's own runners have the outbound network access that the
+# ingest needs, so the pipeline runs here rather than on anyone's laptop.
+# Results are committed back to the branch as JSON, which makes each run
+# reviewable as a diff: you can see exactly which clinics appeared, moved or
+# disappeared since last time.
+
+on:
+  workflow_dispatch:
+    inputs:
+      sources:
+        description: "Which sources to pull"
+        type: choice
+        default: osm
+        options:
+          - osm
+          - osm+rcdso
+          - rcdso
+      rcdso_cities:
+        description: "RCDSO: comma-separated cities (blank = the default list)"
+        type: string
+        default: "Scarborough"
+  schedule:
+    # Monthly. OSM and the register both change slowly.
+    - cron: "17 4 1 * *"
+
+permissions:
+  contents: write
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - run: npm ci
+
+      # Fails fast on a logic regression before spending time on the network.
+      - name: Offline checks
+        run: npx tsx ingest/verify.ts
+
+      - name: OpenStreetMap
+        if: ${{ inputs.sources != 'rcdso' }}
+        run: npx tsx ingest/osm.ts
+
+      - name: Install browser for the register
+        if: ${{ contains(inputs.sources, 'rcdso') }}
+        run: npx playwright install --with-deps chromium
+
+      - name: RCDSO public register
+        if: ${{ contains(inputs.sources, 'rcdso') }}
+        run: |
+          if [ -n "${{ inputs.rcdso_cities }}" ]; then
+            IFS=',' read -ra CITIES <<< "${{ inputs.rcdso_cities }}"
+            for city in "${CITIES[@]}"; do
+              npx tsx ingest/rcdso.ts --city "$(echo "$city" | xargs)"
+            done
+          else
+            npx tsx ingest/rcdso.ts
+          fi
+
+      - name: Merge into clinics
+        run: npx tsx ingest/merge.ts
+
+      - name: Summary
+        run: |
+          {
+            echo "## Ingest results"
+            echo
+            for f in ingest/out/*.json; do
+              [ -e "$f" ] || continue
+              echo "- \`$f\` — $(node -e "console.log(JSON.parse(require('fs').readFileSync('$f','utf8')).length)") records"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ingest-output
+          path: ingest/out/
+
+      - name: Commit results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -f ingest/out/
+          if git diff --staged --quiet; then
+            echo "No change in ingest output."
+          else
+            git commit -m "Ingest: refresh clinic data ($(date -u +%Y-%m-%d))"
+            git push
+          fi

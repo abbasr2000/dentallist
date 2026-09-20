@@ -6,3 +6,8 @@ out/
 *.tsbuildinfo
 next-env.d.ts
 .DS_Store
+
+# Ingest working files. The workflow force-adds the outputs it publishes;
+# crawled pages and extractions stay local (they are large and re-derivable).
+ingest/out/crawled.json
+ingest/out/extracted.json

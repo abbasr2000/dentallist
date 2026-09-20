@@ -7,17 +7,37 @@ thousand websites.
 
 ```
 rcdso.ts  ─┐
-           ├─> merge.ts ─> crawl.ts ─> extract.ts ─> load.ts
-osm.ts    ─┘
+           ├─> merge.ts ─> load.ts        (the database)
+osm.ts    ─┘        │
+                    └─> crawl.ts ─> extract.ts   (enrichment, later)
 ```
 
+## Easiest way to run it: GitHub Actions
+
+The repo's own runners have the outbound network access the ingest needs, so
+you don't need a terminal at all.
+
+Actions → **Ingest Ontario clinics** → Run workflow. Pick `osm` for the first
+run: it is free, takes about a minute, and tells you how many Ontario clinics
+OpenStreetMap actually has. The results are committed back to the branch as
+JSON, so each run is reviewable as a diff — you can see which clinics appeared,
+moved or vanished since last time.
+
+It also runs monthly on its own.
+
 ## Running it
+
+## Running it locally
 
 ```bash
 npx tsx ingest/verify.ts              # offline checks, no network. Run this first.
 npx tsx ingest/osm.ts                 # free, ~1 minute
 npx tsx ingest/rcdso.ts --city Scarborough
 npx tsx ingest/merge.ts
+npx tsx ingest/load.ts --dry-run      # shows what would be written
+npx tsx ingest/load.ts                # needs SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY
+
+# Enrichment — later, once the database has clinics in it:
 npx tsx ingest/crawl.ts --limit 50    # free, polite: ~1.2s between requests
 npx tsx ingest/extract.ts --limit 20  # costs money — measure before scaling
 ```
@@ -34,11 +54,13 @@ Always run the two `--limit` stages small first and look at the output.
 | `osm.ts` Overpass query | **Not run against the live API.** The query and tag mapping are written to the documented OSM schema but have not been executed. |
 | `rcdso.ts` register scraping | **Not run against the live site.** See below. |
 | `extract.ts` end to end | **Not run against the API.** No extraction has been performed. |
+| `load.ts` | **Not run against a database.** `--dry-run` works offline and prints what it would write. |
 
-The three unverified stages could not be executed from the environment this was
-built in, which has no outbound network access from the shell. Nothing here
-should be treated as working until it has been run once and the output looked
-at.
+These stages could not be executed from the environment this was built in: its
+egress policy denies every external host, and there are no API credentials on
+it. That is why the GitHub Actions workflow exists — it runs the same scripts
+somewhere that does have network access. Nothing here should be treated as
+working until it has run once and the output has been looked at.
 
 ## The one thing that will need fixing: RCDSO selectors
 
