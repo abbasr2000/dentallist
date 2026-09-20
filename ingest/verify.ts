@@ -528,31 +528,39 @@ check("an address with nothing usable gives nothing, not a wrong answer", () => 
 });
 
 console.log("\nLocating streets");
-check("a long road collapses to one place, a repeated name stays several", () => {
-  // Yonge Street as a run of ways a few hundred metres apart, plus a Main
-  // Street in Hamilton and another in Ottawa 500 km away.
-  const oneRoad = Array.from({ length: 30 }, (_, i) => ({
-    lat: 43.65 + i * 0.002,
-    lng: -79.383,
+check("a long road is cut into stretches a city can be told apart by", () => {
+  // Britannia Road runs about 30 km from Mississauga through Milton. Stored
+  // as one point its centre is 15 km from either end, which put every
+  // practice on it in the wrong municipality.
+  const longRoad = Array.from({ length: 60 }, (_, i) => ({
+    lat: 43.6,
+    lng: -79.75 + i * 0.006,
   }));
-  assert.equal(clusterPoints(oneRoad).length, 1, "one road is one place");
+  const stretches = clusterPoints(longRoad);
+  assert.ok(stretches.length > 5, `a 30 km road became ${stretches.length} stretches`);
+  for (const s of stretches) {
+    assert.ok(s.lng >= -79.76 && s.lng <= -79.39, "every stretch sits on the road");
+  }
+});
 
-  const twoRoads = [
+check("two roads sharing a name stay far apart", () => {
+  // Main Street in Hamilton and Main Street in Ottawa, 500 km between them.
+  const clusters = clusterPoints([
     { lat: 43.256, lng: -79.871 },
     { lat: 43.257, lng: -79.872 },
     { lat: 45.421, lng: -75.697 },
-  ];
-  const clusters = clusterPoints(twoRoads);
+  ]);
   assert.equal(clusters.length, 2, "two roads of one name stay two places");
-  assert.equal(clusters[0].ways, 2, "the larger cluster comes first");
+  assert.equal(clusters[0].ways, 2, "the longer one comes first");
 });
 
-check("a cluster's centre is the mean of its ways, not its first point", () => {
+check("a stretch's centre is the mean of its ways, not its first point", () => {
   const [only] = clusterPoints([
     { lat: 43.0, lng: -79.0 },
-    { lat: 43.02, lng: -79.0 },
+    { lat: 43.004, lng: -79.0 },
   ]);
-  assert.ok(Math.abs(only.lat - 43.01) < 1e-6, `centre was ${only.lat}`);
+  assert.equal(only.ways, 2, "both ways joined one stretch");
+  assert.ok(Math.abs(only.lat - 43.002) < 1e-6, `centre was ${only.lat}`);
 });
 
 check("street names come from the addresses, commonest first", () => {

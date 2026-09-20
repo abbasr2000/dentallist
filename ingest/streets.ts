@@ -40,8 +40,22 @@ const RCDSO_PATH = "ingest/out/rcdso.json";
  *  that one timing out costs little. */
 const BATCH = 80;
 
-/** Two points on a street this far apart are different streets of that name. */
-const CLUSTER_KM = 12;
+/**
+ * How finely a street is cut into stretches.
+ *
+ * This is not "how far apart two streets of the same name are" — it is how
+ * precisely a practice on that street can be placed. A cluster is stored as
+ * its centre, so the centre of a 30 km road is up to 15 km from any address on
+ * it, and in the GTA that crosses two municipal boundaries. Britannia Road
+ * runs continuously from Mississauga through Milton; collapsed to one point it
+ * put every practice on it in Milton.
+ *
+ * Measured: at 12 km the median placement error was 2.1 km and 111 of the 195
+ * misses were the right road at the wrong stretch. Two kilometres cuts a long
+ * road into stretches a city can be told apart by, and the practice's own
+ * dentists pick which stretch.
+ */
+const CLUSTER_KM = 2;
 
 /** Roads that carry addresses. Service roads and tracks do not. */
 const ROAD_TYPES =
@@ -170,8 +184,10 @@ async function main() {
   const names = streetNamesFrom(records);
   console.log(`${names.length} distinct street names in ${records.length} register records`);
 
-  // Resume: a street already looked up is not looked up again.
-  const index: StreetIndex = readJson<StreetIndex>(OUT_PATH) ?? {};
+  // Resume: a street already looked up is not looked up again. --refresh
+  // starts over, which is what a change to the clustering needs.
+  const refresh = process.argv.includes("--refresh");
+  const index: StreetIndex = refresh ? {} : (readJson<StreetIndex>(OUT_PATH) ?? {});
   const todo = names.filter((n) => !(n in index));
   console.log(`  ${names.length - todo.length} already known, ${todo.length} to look up`);
 
