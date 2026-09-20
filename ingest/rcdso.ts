@@ -7,33 +7,64 @@
  * say a clinic is genuinely strong at implants or endodontics without making a
  * comparative claim of our own.
  *
- * Driven through a real browser rather than by reverse-engineering an endpoint:
- * the register's form posts through client-side script, and a browser handles
- * whatever it does without us guessing at an API that can change underneath us.
+ * The register's search is a plain GET form — action /find-a-dentist/search-results,
+ * method get, with named fields — so this fetches URLs and parses HTML rather
+ * than driving a browser. That was worth checking: it makes a full Ontario run
+ * cheap enough to do politely in one pass, and removes Chromium from the
+ * pipeline entirely.
  *
- * ── NOT YET VERIFIED AGAINST THE LIVE SITE ──────────────────────────────────
- * The selectors in SELECTORS below are the one thing that needs checking on the
- * first real run. Run with `--inspect-form` to have the script print the form's
- * actual fields and result markup instead of scraping, then correct them here.
- * Everything downstream of `parseResultRow` is independent of the markup.
+ * There is also a predictive endpoint, /Predictive/Cities?query=, which returns
+ * the register's own city spellings. Walking those beats guessing at a list,
+ * since a city the register does not recognise returns nothing.
  *
  * Run: npx tsx ingest/rcdso.ts --city Scarborough
- *      npx tsx ingest/rcdso.ts --inspect-form
+ *      npx tsx ingest/rcdso.ts --probe          (dump the results markup)
+ *      npx tsx ingest/rcdso.ts --cities         (dump the register's city list)
  */
 
-import { chromium, type Page } from "playwright";
+import * as cheerio from "cheerio";
 import { writeJson, normalizePhone, normalizePostal, slugify, sleep, type SourceRecord } from "./lib";
 
-const REGISTER_URL = "https://www.rcdso.org/en-ca/find-a-dentist";
+const ORIGIN = "https://www.rcdso.org";
+const SEARCH_URL = `${ORIGIN}/find-a-dentist/search-results`;
+const CITIES_URL = `${ORIGIN}/Predictive/Cities`;
 
-/** The only markup-dependent part of this file. Verify with --inspect-form. */
-const SELECTORS = {
-  cityInput: 'input[name*="city" i], input[id*="city" i]',
-  submitButton: 'button[type="submit"], input[type="submit"]',
-  resultRow: '[class*="result" i] li, table tbody tr, [class*="dentist-card" i]',
-  nextPage: 'a[rel="next"], a[aria-label*="next" i], button[aria-label*="next" i]',
-  consentButton: 'button:has-text("Accept"), button:has-text("I agree")',
-} as const;
+/**
+ * The register is a public regulator's register and we are a small, identified
+ * client. Announce who we are and go slowly enough that the crawl costs them
+ * nothing they would notice.
+ */
+const UA = "dentallist-ingest/1.0 (+https://github.com/abbasr2000/dentallist)";
+const POLITE_DELAY_MS = 1200;
+
+async function get(url: string): Promise<string> {
+  const response = await fetch(url, {
+    headers: { "user-agent": UA, accept: "text/html,application/json" },
+    redirect: "follow",
+  });
+  if (!response.ok) throw new Error(`${response.status} ${response.statusText} for ${url}`);
+  return response.text();
+}
+
+function searchUrl(params: Record<string, string>): string {
+  const query = new URLSearchParams();
+  // The form's own field names, read off the live page.
+  for (const [key, value] of Object.entries(params)) {
+    if (value) query.set(key, value);
+  }
+  return `${SEARCH_URL}?${query.toString()}`;
+}
+
+/** The register's own spelling of every city it knows, for a prefix. */
+export async function citiesMatching(prefix: string): Promise<string[]> {
+  const body = await get(`${CITIES_URL}?query=${encodeURIComponent(prefix)}`);
+  try {
+    const parsed = JSON.parse(body) as { results?: string[] };
+    return parsed.results ?? [];
+  } catch {
+    return [];
+  }
+}
 
 /**
  * The Ontario municipalities to walk.
@@ -123,149 +154,136 @@ export function parseResultRow(row: RawRow): SourceRecord | undefined {
   };
 }
 
-async function inspectForm(page: Page): Promise<void> {
-  // The register may well be API-driven. A JSON endpoint is far better than
-  // scraping markup, so watch the network before touching the DOM.
-  const apiCalls: { url: string; status: number; sample: string }[] = [];
-  page.on("response", async (response) => {
-    const url = response.url();
-    const type = response.headers()["content-type"] ?? "";
-    if (!type.includes("json")) return;
-    if (/analytics|telemetry|consent|gtm|gtag|sentry/i.test(url)) return;
-    try {
-      const body = await response.text();
-      apiCalls.push({ url, status: response.status(), sample: body.slice(0, 600) });
-    } catch {
-      /* body already consumed or the request was aborted */
+/**
+ * Dump the structure of a real results page.
+ *
+ * The register's search form is now known; its results markup is not, and this
+ * is what reveals it without guessing. It prints the elements that repeat —
+ * the result row is almost always the most-repeated one with substance in it —
+ * and a sample of the likeliest candidate, so the parser can be written against
+ * something real.
+ */
+async function probe(city: string): Promise<void> {
+  const url = searchUrl({ City: city, DetailsCode: "All" });
+  console.log(`GET ${url}\n`);
+
+  const html = await get(url);
+  console.log(`${html.length} bytes`);
+
+  const $ = cheerio.load(html);
+  console.log(`title: ${$("title").text().trim()}\n`);
+
+  const counts = new Map<string, number>();
+  $("body *").each((_, el) => {
+    const node = $(el);
+    const cls = (node.attr("class") ?? "").split(/\s+/).filter(Boolean).slice(0, 3).join(".");
+    if (!cls) return;
+    const key = `${(el as { tagName?: string }).tagName ?? "?"}.${cls}`;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  });
+
+  const repeated = [...counts.entries()]
+    .filter(([, n]) => n >= 2)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 40);
+
+  console.log("=== REPEATED ELEMENTS ===");
+  for (const [selector, n] of repeated) {
+    const text = $(selector.replace(/^[a-z0-9]+\./i, (m) => m)).first().text().replace(/\s+/g, " ").trim();
+    console.log(`  ${String(n).padStart(4)}x  ${selector}`);
+    if (text) console.log(`         first: ${text.slice(0, 110)}`);
+  }
+
+  // A row that mentions a dentist and an address is the one we want.
+  console.log("\n=== LIKELY ROWS ===");
+  for (const [selector] of repeated.slice(0, 12)) {
+    const nodes = $(selector);
+    const sample = nodes.first();
+    const text = sample.text().replace(/\s+/g, " ").trim();
+    if (!/\b(dr\.?|dds|dental|dentistry)\b/i.test(text)) continue;
+    console.log(`\n--- ${selector} (${nodes.length}) ---`);
+    console.log(sample.html()?.replace(/\s+/g, " ").slice(0, 1400));
+  }
+
+  console.log("\n=== TABLES ===");
+  $("table").each((i, table) => {
+    const headers = $(table).find("th").map((_, th) => $(th).text().trim()).get();
+    const rows = $(table).find("tbody tr").length;
+    console.log(`  table ${i}: ${rows} rows, headers: ${JSON.stringify(headers)}`);
+    const first = $(table).find("tbody tr").first();
+    if (first.length) {
+      console.log(`    first row: ${first.text().replace(/\s+/g, " ").trim().slice(0, 300)}`);
     }
   });
 
-  await page.goto(REGISTER_URL, { waitUntil: "domcontentloaded" });
-  await page.waitForLoadState("networkidle").catch(() => {});
-
-  const consent = page.locator(SELECTORS.consentButton).first();
-  if (await consent.isVisible().catch(() => false)) {
-    await consent.click();
-    await page.waitForTimeout(1000);
-  }
-
-  const form = await page.evaluate(() => ({
-    title: document.title,
-    forms: [...document.querySelectorAll("form")].map((f) => ({
-      action: f.getAttribute("action"),
-      method: f.getAttribute("method"),
-      id: f.id,
-    })),
-    fields: [...document.querySelectorAll("input, select, textarea, button")].map((el) => ({
-      tag: el.tagName.toLowerCase(),
-      type: (el as HTMLInputElement).type,
-      name: (el as HTMLInputElement).name,
-      id: el.id,
-      placeholder: (el as HTMLInputElement).placeholder,
-      label: (el.textContent ?? "").trim().slice(0, 60) || undefined,
-    })),
-    iframes: [...document.querySelectorAll("iframe")].map((f) => f.src),
-  }));
-  console.log("=== FORM ===");
-  console.log(JSON.stringify(form, null, 2));
-
-  // Try the search we would actually run, so the result markup is visible.
-  console.log("\n=== SEARCH: Scarborough ===");
-  try {
-    const input = page.locator(SELECTORS.cityInput).first();
-    await input.waitFor({ state: "visible", timeout: 15_000 });
-    await input.fill("Scarborough");
-    await page.locator(SELECTORS.submitButton).first().click();
-    await page.waitForLoadState("networkidle").catch(() => {});
-    await page.waitForTimeout(3000);
-    console.log(`landed on ${page.url()}`);
-  } catch (error) {
-    console.log(`could not drive the form: ${(error as Error).message}`);
-    console.log("The FORM dump above is what there is to go on.");
-  }
-
-  // Whatever repeats on the page is very likely the result row.
-  const repeated = await page.evaluate(() => {
-    const counts = new Map<string, number>();
-    for (const el of document.querySelectorAll("body *")) {
-      const cls = [...el.classList].slice(0, 3).join(".");
-      if (!cls) continue;
-      const key = `${el.tagName.toLowerCase()}.${cls}`;
-      counts.set(key, (counts.get(key) ?? 0) + 1);
-    }
-    return [...counts.entries()]
-      .filter(([, n]) => n >= 3 && n <= 200)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 30);
+  console.log("\n=== PAGINATION ===");
+  $("a, button").each((_, el) => {
+    const node = $(el);
+    const label = `${node.text().trim()} ${node.attr("aria-label") ?? ""}`.trim();
+    if (!/next|page\s*\d|\u203a|\u00bb/i.test(label)) return;
+    console.log(`  ${(el as { tagName?: string }).tagName} "${label.slice(0, 40)}" href=${node.attr("href") ?? "-"}`);
   });
-  console.log("\n=== REPEATED ELEMENTS (candidate result rows) ===");
-  for (const [selector, count] of repeated) console.log(`  ${count}x  ${selector}`);
 
-  const pager = await page.evaluate(() =>
-    [...document.querySelectorAll("a, button")]
-      .filter((el) => /next|page|›|»/i.test(`${el.textContent} ${el.getAttribute("aria-label") ?? ""}`))
-      .slice(0, 15)
-      .map((el) => ({
-        tag: el.tagName.toLowerCase(),
-        text: (el.textContent ?? "").trim().slice(0, 30),
-        aria: el.getAttribute("aria-label"),
-        cls: el.className?.toString().slice(0, 60),
-        href: el.getAttribute("href"),
-      })),
-  );
-  console.log("\n=== PAGINATION CANDIDATES ===");
-  console.log(JSON.stringify(pager, null, 2));
-
-  console.log("\n=== JSON RESPONSES SEEN ===");
-  for (const call of apiCalls.slice(-25)) {
-    console.log(`\n${call.status}  ${call.url}`);
-    console.log(`  ${call.sample.replace(/\n/g, " ").slice(0, 400)}`);
+  console.log("\n=== RESULT COUNT PHRASES ===");
+  for (const m of html.matchAll(/([\d,]+)\s*(results?|records?|dentists?|matches)/gi)) {
+    console.log(`  ${m[0]}`);
   }
-  if (apiCalls.length === 0) console.log("  none — the register renders server-side, so scrape the markup.");
-
-  console.log("\nUpdate SELECTORS in ingest/rcdso.ts to match, then run without --inspect-form.");
 }
 
-async function searchCity(page: Page, city: string): Promise<SourceRecord[]> {
-  await page.goto(REGISTER_URL, { waitUntil: "domcontentloaded" });
+/**
+ * Every record the register returns for one city.
+ *
+ * Paginates until a page repeats or yields nothing. The parser works off each
+ * row's text rather than its markup, so a redesign of the register costs us
+ * ROW_SELECTORS and nothing else.
+ */
+const ROW_SELECTORS = [
+  "table tbody tr",
+  "[class*='result' i] li",
+  "[class*='dentist' i][class*='card' i]",
+  "[class*='search-result' i]",
+];
 
-  const consent = page.locator(SELECTORS.consentButton).first();
-  if (await consent.isVisible().catch(() => false)) await consent.click();
-
-  const input = page.locator(SELECTORS.cityInput).first();
-  await input.waitFor({ state: "visible", timeout: 20_000 });
-  await input.fill(city);
-  await page.locator(SELECTORS.submitButton).first().click();
-  await page.waitForLoadState("networkidle");
-
+export async function searchCity(city: string): Promise<SourceRecord[]> {
   const records: SourceRecord[] = [];
   const seen = new Set<string>();
 
   for (let pageNumber = 1; pageNumber <= 200; pageNumber++) {
-    const rows = await page.locator(SELECTORS.resultRow).evaluateAll((nodes) =>
-      nodes.map((n) => ({ text: n.textContent ?? "", html: n.innerHTML })),
+    const url = searchUrl({
+      City: city,
+      DetailsCode: "All",
+      ...(pageNumber > 1 ? { page: String(pageNumber) } : {}),
+    });
+
+    const html = await get(url);
+    const $ = cheerio.load(html);
+
+    const rows = ROW_SELECTORS.flatMap((selector) =>
+      $(selector)
+        .map((_, el) => ({
+          text: $(el).text(),
+          html: $(el).html() ?? "",
+        }))
+        .get(),
     );
     if (rows.length === 0) break;
 
+    let added = 0;
     for (const row of rows) {
       const record = parseResultRow(row);
       if (!record) continue;
-      const key = `${record.sourceId}|${record.name}`;
+      const key = `${record.sourceId}`;
       if (seen.has(key)) continue;
       seen.add(key);
-      record.city = city;
+      record.city ??= city;
       records.push(record);
+      added++;
     }
 
-    const next = page.locator(SELECTORS.nextPage).first();
-    const hasNext =
-      (await next.isVisible().catch(() => false)) &&
-      (await next.isEnabled().catch(() => false));
-    if (!hasNext) break;
-
-    await next.click();
-    await page.waitForLoadState("networkidle");
-    await sleep(1200); // Deliberate. This is a regulator's website.
+    // A page that adds nothing new means we have looped back on ourselves,
+    // which is how a register without a "next" link tells us it is done.
+    if (added === 0) break;
+    await sleep(POLITE_DELAY_MS);
   }
 
   return records;
@@ -273,52 +291,58 @@ async function searchCity(page: Page, city: string): Promise<SourceRecord[]> {
 
 async function main() {
   const args = process.argv.slice(2);
-  const cityArgIndex = args.indexOf("--city");
-  const cities =
-    cityArgIndex >= 0 && args[cityArgIndex + 1]
-      ? [args[cityArgIndex + 1]]
-      : DEFAULT_CITIES;
+  const valueFor = (flag: string) => {
+    const i = args.indexOf(flag);
+    return i >= 0 ? args[i + 1] : undefined;
+  };
 
-  const browser = await chromium.launch({
-    executablePath: process.env.CHROMIUM_PATH || undefined,
-  });
-  const page = await browser.newPage({
-    userAgent:
-      "Mozilla/5.0 (compatible; OntarioDentalDirectoryBot/0.1; +https://example.invalid/about)",
-  });
-
-  try {
-    if (args.includes("--inspect-form")) {
-      await inspectForm(page);
-      return;
-    }
-
-    const all: SourceRecord[] = [];
-    for (const city of cities) {
-      console.log(`Searching ${city}…`);
-      try {
-        const records = await searchCity(page, city);
-        console.log(`  ${records.length} records`);
-        all.push(...records);
-      } catch (error) {
-        console.error(`  ${city} failed: ${String(error)}`);
-      }
-      await sleep(2500);
-    }
-
-    const specialists = all.filter((r) => r.practitioners?.[0]?.specialty).length;
-    const sedation = all.filter((r) => r.permits?.sedation).length;
-    console.log(`\n${all.length} records, ${specialists} with a specialty, ${sedation} mentioning sedation`);
-
-    writeJson("ingest/out/rcdso.json", all);
-    console.log("Wrote ingest/out/rcdso.json");
-  } finally {
-    await browser.close();
+  if (args.includes("--probe")) {
+    await probe(valueFor("--probe")?.startsWith("--") ? "Scarborough" : valueFor("--probe") ?? "Scarborough");
+    return;
   }
+
+  if (args.includes("--cities")) {
+    // The predictive endpoint answers prefixes, so walking the alphabet (and
+    // two-letter prefixes for the crowded letters) enumerates the register's
+    // own city list without us inventing one.
+    const found = new Set<string>();
+    const letters = "abcdefghijklmnopqrstuvwxyz".split("");
+    for (const letter of letters) {
+      for (const name of await citiesMatching(letter)) found.add(name);
+      await sleep(400);
+    }
+    const sorted = [...found].sort();
+    console.log(`${sorted.length} cities on the register`);
+    writeJson("ingest/out/rcdso-cities.json", sorted);
+    console.log("Wrote ingest/out/rcdso-cities.json");
+    return;
+  }
+
+  const cities = valueFor("--city") ? [valueFor("--city")!] : DEFAULT_CITIES;
+
+  const all: SourceRecord[] = [];
+  for (const city of cities) {
+    process.stdout.write(`${city}… `);
+    try {
+      const records = await searchCity(city);
+      console.log(`${records.length} records`);
+      all.push(...records);
+    } catch (error) {
+      console.log(`failed: ${String(error)}`);
+    }
+    await sleep(POLITE_DELAY_MS);
+  }
+
+  const specialists = all.filter((r) => r.practitioners?.[0]?.specialty).length;
+  const sedation = all.filter((r) => r.permits?.sedation).length;
+  console.log(`\n${all.length} records, ${specialists} with a specialty, ${sedation} mentioning sedation`);
+
+  writeJson("ingest/out/rcdso.json", all);
+  console.log("Wrote ingest/out/rcdso.json");
 }
 
 // Guarded so that importing this module (for its exported parsers, or from a
-// test) does not launch a browser or hit the network.
+// test) does not hit the network.
 if (require.main === module) {
   main().catch((error) => {
     console.error(error);
