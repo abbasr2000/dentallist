@@ -21,6 +21,9 @@ import {
   type SourceRecord,
 } from "./lib";
 import { resolveCity } from "./places";
+import { locate, placeIndex } from "./locate";
+import type { StreetIndex } from "./streets";
+import type { GazetteerPlace } from "./gazetteer";
 
 interface MergedClinic {
   slug: string;
@@ -252,6 +255,65 @@ export function mergeRecords(records: SourceRecord[]): MergedClinic[] {
   return clinics;
 }
 
+/**
+ * Give every register practice coordinates before anything else happens.
+ *
+ * The register's own city field is where a dentist registered, not where the
+ * practice is, and it was wrong on 42% of the clinics we can check. Every
+ * record of one practice carries the same street, so they are located together
+ * and each one is stamped with the answer.
+ *
+ * This has to run before the merge and not after. The merge decides whether
+ * two records are the same practice partly by city, so while the cities were
+ * wrong one practice was being split into one clinic per city it appeared
+ * under — the U of T dental school became seven.
+ */
+function locateRegisterRecords(records: SourceRecord[]): void {
+  const streets = readJson<StreetIndex>("ingest/out/streets.json");
+  const gazetteer = readJson<GazetteerPlace[]>("ingest/out/gazetteer.json");
+
+  if (!streets || !gazetteer) {
+    console.warn(
+      "  no streets.json or gazetteer.json — practices keep the register's own " +
+        "city, which is wrong about two times in five. Run ingest/streets.ts " +
+        "and ingest/gazetteer.ts.",
+    );
+    return;
+  }
+
+  const places = placeIndex(gazetteer);
+  const groups = new Map<string, SourceRecord[]>();
+  for (const record of records) {
+    const group = groups.get(record.sourceId) ?? [];
+    group.push(record);
+    groups.set(record.sourceId, group);
+  }
+
+  const basisCount = new Map<string, number>();
+  let placed = 0;
+
+  for (const group of groups.values()) {
+    const found = locate(
+      group[0].address,
+      group.map((r) => r.city),
+      streets,
+      places,
+    );
+    if (!found) continue;
+    placed++;
+    basisCount.set(found.basis, (basisCount.get(found.basis) ?? 0) + 1);
+    for (const record of group) {
+      record.lat = found.lat;
+      record.lng = found.lng;
+    }
+  }
+
+  console.log(`  located ${placed}/${groups.size} register practices`);
+  for (const [basis, count] of [...basisCount].sort((a, b) => b[1] - a[1])) {
+    console.log(`    ${count} by ${basis}`);
+  }
+}
+
 function main() {
   const rcdso = readJson<SourceRecord[]>("ingest/out/rcdso.json") ?? [];
   const osm = readJson<SourceRecord[]>("ingest/out/osm.json") ?? [];
@@ -262,6 +324,7 @@ function main() {
   }
 
   console.log(`Merging ${rcdso.length} RCDSO + ${osm.length} OSM records`);
+  locateRegisterRecords(rcdso);
   const clinics = mergeRecords([...rcdso, ...osm]);
 
   const bothSources = clinics.filter(
