@@ -16,9 +16,39 @@ export const SITE = {
   locale: "en-CA",
 } as const;
 
-export const SITE_URL = (
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://example.invalid"
-).replace(/\/$/, "");
+/**
+ * The host every absolute URL is built from, in order of preference:
+ *
+ * 1. `NEXT_PUBLIC_SITE_URL` — set this once a real domain exists. It wins
+ *    everywhere, including on Vercel.
+ * 2. `VERCEL_PROJECT_PRODUCTION_URL` — Vercel sets this at build time to the
+ *    project's stable production host. Preview deployments get it too, so a
+ *    preview's canonicals point at production rather than at a build-specific
+ *    URL that will not exist next week. That is what canonicals are for.
+ * 3. A placeholder, so a local build still produces well-formed URLs.
+ *
+ * The placeholder must never reach production: a sitemap full of
+ * example.invalid is worse than no sitemap, so the build fails instead.
+ */
+export function resolveSiteUrl(): string {
+  const explicit = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  if (explicit) return explicit;
+
+  const vercel = process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim();
+  if (vercel) return vercel.startsWith("http") ? vercel : `https://${vercel}`;
+
+  if (process.env.VERCEL) {
+    throw new Error(
+      "Building on Vercel with no host. Expected VERCEL_PROJECT_PRODUCTION_URL " +
+        "or NEXT_PUBLIC_SITE_URL; shipping canonicals and a sitemap pointing at " +
+        "example.invalid would be worse than shipping neither.",
+    );
+  }
+
+  return "https://example.invalid";
+}
+
+export const SITE_URL = resolveSiteUrl().replace(/\/$/, "");
 
 export function absolute(path: string): string {
   return `${SITE_URL}${path.startsWith("/") ? path : `/${path}`}`;

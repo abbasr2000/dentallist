@@ -1,8 +1,13 @@
+import type { Metadata } from "next";
 import { SITE, paths } from "@/lib/site";
 import { allCities, allClinics, cityStats } from "@/lib/data";
 import { PROCEDURES } from "@/lib/procedures";
 import { JsonLd } from "@/components/JsonLd";
 import * as S from "@/lib/schema";
+
+export const metadata: Metadata = {
+  alternates: { canonical: paths.home() },
+};
 
 export default function HomePage() {
   const cities = allCities();

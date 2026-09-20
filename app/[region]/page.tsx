@@ -15,6 +15,7 @@ export function generateStaticParams() {
 export const metadata: Metadata = {
   title: `Dental clinics in ${SITE.region}`,
   description: `Compare dental clinics across ${SITE.region} by what they treat, with sources for every claim.`,
+  alternates: { canonical: paths.region() },
 };
 
 export default async function RegionPage({

@@ -13,6 +13,7 @@ import { mergeRecords } from "./merge";
 import { assignPlace, resolveCity, MAX_ASSIGN_KM } from "./places";
 import { scoreProcedure } from "../lib/strength";
 import { PROCEDURES, proceduresForSpecialty } from "../lib/procedures";
+import { resolveSiteUrl } from "../lib/site";
 import type { SourceRecord } from "./lib";
 
 let passed = 0;
@@ -471,6 +472,61 @@ check("no amount of self-description reaches a registered specialist", () => {
   assert.ok(
     selfDescribed < oneRegistration,
     `self-described ${selfDescribed} must stay below one registration ${oneRegistration}`,
+  );
+});
+
+/* ------------------------------------------------------ the canonical host */
+
+/** Runs `fn` with exactly the given host variables set, then puts them back. */
+function withHostEnv(env: Record<string, string | undefined>, fn: () => void) {
+  const keys = ["NEXT_PUBLIC_SITE_URL", "VERCEL_PROJECT_PRODUCTION_URL", "VERCEL"];
+  const before = Object.fromEntries(keys.map((k) => [k, process.env[k]]));
+  try {
+    for (const k of keys) delete process.env[k];
+    for (const [k, v] of Object.entries(env)) if (v !== undefined) process.env[k] = v;
+    fn();
+  } finally {
+    for (const k of keys) {
+      if (before[k] === undefined) delete process.env[k];
+      else process.env[k] = before[k]!;
+    }
+  }
+}
+
+check("an explicit site URL wins over everything", () => {
+  withHostEnv(
+    {
+      NEXT_PUBLIC_SITE_URL: "https://ontariodental.ca",
+      VERCEL_PROJECT_PRODUCTION_URL: "dentallist.vercel.app",
+      VERCEL: "1",
+    },
+    () => assert.equal(resolveSiteUrl(), "https://ontariodental.ca"),
+  );
+});
+
+check("Vercel's production host is used, and given a scheme", () => {
+  withHostEnv({ VERCEL_PROJECT_PRODUCTION_URL: "dentallist.vercel.app", VERCEL: "1" }, () =>
+    assert.equal(resolveSiteUrl(), "https://dentallist.vercel.app"),
+  );
+});
+
+check("a Vercel host that already has a scheme is left alone", () => {
+  withHostEnv({ VERCEL_PROJECT_PRODUCTION_URL: "https://dentallist.vercel.app", VERCEL: "1" }, () =>
+    assert.equal(resolveSiteUrl(), "https://dentallist.vercel.app"),
+  );
+});
+
+check("a local build falls back to the placeholder", () => {
+  withHostEnv({}, () => assert.equal(resolveSiteUrl(), "https://example.invalid"));
+});
+
+check("a Vercel build with no host fails rather than shipping the placeholder", () => {
+  withHostEnv({ VERCEL: "1" }, () => assert.throws(() => resolveSiteUrl(), /example\.invalid/));
+});
+
+check("blank host variables are treated as unset, not as a host", () => {
+  withHostEnv({ NEXT_PUBLIC_SITE_URL: "  ", VERCEL_PROJECT_PRODUCTION_URL: "dentallist.vercel.app" }, () =>
+    assert.equal(resolveSiteUrl(), "https://dentallist.vercel.app"),
   );
 });
 
