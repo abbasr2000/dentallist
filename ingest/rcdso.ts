@@ -148,23 +148,41 @@ export function parseRow($: cheerio.CheerioAPI, el: RowElement): SourceRecord | 
     .get()
     .filter(Boolean);
 
-  const practiceName = lines[0];
-  const street = lines.slice(1).join(", ") || undefined;
+  // Not every practice has a registered trade name. Where there is none the
+  // address block simply begins with the street, and reading the first line as
+  // a name gives 1,826 practices called things like "65 Donly Dr N #1" — 23%
+  // of the directory — each with an empty address field, so there is nothing
+  // to place them by either. A leading house number is what tells them apart.
+  const startsWithHouseNumber = (line: string | undefined) =>
+    line !== undefined && /^\d+[A-Za-z]?(?:\s*-\s*\d+[A-Za-z]?)?[\s,]/.test(line);
+
+  const unnamed = startsWithHouseNumber(lines[0]);
+  const practiceName = unnamed ? undefined : lines[0];
+  const street = (unnamed ? lines : lines.slice(1)).join(", ") || undefined;
+
   const postalCode = normalizePostal(
     addressBlock.text().match(/\b[A-Z]\d[A-Z][\s-]?\d[A-Z]\d\b/i)?.[0],
   );
 
-  const name = practiceName ?? personName;
-  if (!name) return undefined;
+  // A dentist with no address block at all is a real registration but not a
+  // clinic, so there is nothing for the directory to list.
+  if (!practiceName && !street) return undefined;
 
-  // A dentist with no practice on the register is a real registration but not
-  // a clinic, so there is nothing for the directory to list.
-  if (!practiceName) return undefined;
+  // The practice is identified by where it is and what it answers on, never by
+  // whose name happens to be on this row — otherwise three dentists sharing an
+  // unnamed address become three clinics.
+  const sourceId = slugify(`${practiceName ?? ""}-${street ?? ""}-${phone ?? ""}`);
+
+  // An unnamed practice is named by where it is. Whether it should be shown
+  // as its solo dentist's name is a question about display, and is answered in
+  // data/ingested.ts where the number of dentists at the address is known;
+  // one row does not know that.
+  const name = practiceName ?? street!;
 
   return {
     source: "rcdso",
-    sourceId: slugify(`${practiceName}-${street ?? ""}-${phone ?? ""}`),
-    name: practiceName,
+    sourceId,
+    name,
     address: street,
     postalCode,
     phone,

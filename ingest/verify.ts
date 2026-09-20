@@ -491,6 +491,50 @@ check("no amount of self-description reaches a registered specialist", () => {
   );
 });
 
+check("a practice with no trade name is read as an address, not named one", () => {
+  // The register's address block simply starts with the street when there is
+  // no registered practice name. Reading line one as a name gave 1,826
+  // clinics called things like "65 Donly Dr N #1", each with no address left
+  // to place them by.
+  const $ = cheerio.load(`
+    <section class="row hide">
+      <h2> - Joseph Hanna</h2>
+      <dl><dt>Registration Number:</dt><dd>12345</dd></dl>
+      <dl><dt>Phone:</dt><dd>416-555-0100</dd></dl>
+      <address><span>1333 Sheppard Ave E #246</span></address>
+    </section>`);
+  const record = parseRow($, $(ROW_SELECTOR).first()[0]);
+  assert.ok(record, "should still be a clinic");
+  assert.equal(record.address, "1333 Sheppard Ave E #246", "the street is the address");
+  assert.equal(record.name, "1333 Sheppard Ave E #246", "and stands in as the name");
+});
+
+check("a named practice still keeps its name and street apart", () => {
+  const $ = cheerio.load(`
+    <section class="row hide">
+      <h2> - Ghazala Zaid</h2>
+      <dl><dt>Phone:</dt><dd>416-945-1000</dd></dl>
+      <address><span>Cedarbrae Dental Center</span><span>3630 Lawrence Ave E</span></address>
+    </section>`);
+  const record = parseRow($, $(ROW_SELECTOR).first()[0]);
+  assert.equal(record?.name, "Cedarbrae Dental Center");
+  assert.equal(record?.address, "3630 Lawrence Ave E");
+});
+
+check("dentists sharing an unnamed address are one practice, not three", () => {
+  const row = (dentist: string) => `
+    <section class="row hide">
+      <h2> - ${dentist}</h2>
+      <dl><dt>Phone:</dt><dd>519-555-0199</dd></dl>
+      <address><span>65 Donly Dr N #1</span></address>
+    </section>`;
+  const ids = ["Darren Kaplan", "David Holmes", "Rajan Gupta"].map((d) => {
+    const $ = cheerio.load(row(d));
+    return parseRow($, $(ROW_SELECTOR).first()[0])?.sourceId;
+  });
+  assert.equal(new Set(ids).size, 1, `three dentists gave ${new Set(ids).size} practices`);
+});
+
 console.log("\nReading a street out of a register address");
 check("the street survives house numbers, units and building names", () => {
   const cases: Array<[string, string]> = [

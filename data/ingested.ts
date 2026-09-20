@@ -190,6 +190,27 @@ function accessibilityFrom(claim: ClaimedListing): Clinic["accessibility"] {
   return accessibility;
 }
 
+/**
+ * What to call a practice with no registered trade name.
+ *
+ * Roughly a quarter of the register's practices have none: the address block
+ * simply starts with the street. Those records are named by their address,
+ * which is the truthful thing for the ingest to record but a poor heading for
+ * a listing — "1333 Sheppard Ave E #246" tells a reader nothing they can
+ * recognise.
+ *
+ * Where one dentist works there, that dentist is the practice and patients
+ * look them up by name. Where several do there is no name to use, and the
+ * address stands as the heading, which is ordinary for a business without a
+ * trade name.
+ */
+function displayName(record: MergedClinic): string {
+  const unnamed = record.address && record.name === record.address;
+  if (!unnamed) return record.name;
+  const dentists = record.practitioners ?? [];
+  return dentists.length === 1 ? dentists[0].fullName : record.name;
+}
+
 function toClinic(record: MergedClinic): Clinic | undefined {
   if (!record.citySlug || !record.slug || !record.name) return undefined;
 
@@ -220,7 +241,7 @@ function toClinic(record: MergedClinic): Clinic | undefined {
   return {
     slug: record.slug,
     // An owner's own spelling of their practice name beats a mapper's.
-    name: claim?.name ?? record.name,
+    name: claim?.name ?? displayName(record),
     // The owner's own answer about where they are beats the pipeline's.
     citySlug: claim?.city?.slug ?? record.citySlug,
     address: record.address,
