@@ -15,7 +15,7 @@ import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { JsonLd } from "@/components/JsonLd";
 import { Faq } from "@/components/Faq";
 import * as S from "@/lib/schema";
-import type { Clinic, Provenance } from "@/lib/types";
+import type { City, Clinic, Provenance } from "@/lib/types";
 
 export function generateStaticParams() {
   return allClinics().map((c) => ({ city: c.citySlug, slug: c.slug }));
@@ -49,10 +49,19 @@ export async function generateMetadata({
     title: `${clinic.name} — dentist in ${city.name}`,
     description:
       services.length > 0
-        ? `${clinic.name}, ${clinic.address}. Listed for ${services.join(", ").toLowerCase()}. Hours, languages and contact details with sources.`
-        : `${clinic.name}, ${clinic.address}. Contact details, hours and services with sources.`,
+        ? `${clinic.name}, ${where(clinic, city)}. Listed for ${services.join(", ").toLowerCase()}. Hours, languages and contact details with sources.`
+        : `${clinic.name}, ${where(clinic, city)}. Contact details, hours and services with sources.`,
     alternates: { canonical: paths.clinic(citySlug, slug) },
   };
+}
+
+/**
+ * Where a clinic is, in words. Half of Ontario's practices reach us without a
+ * street address, and a description reading "Name, undefined" is worse than
+ * one naming only the city.
+ */
+function where(clinic: Clinic, city: City): string {
+  return clinic.address ? `${clinic.address}, ${city.name}` : `${city.name}, Ontario`;
 }
 
 /** A small "where this came from" line. The product's credibility rests on it. */
@@ -105,7 +114,7 @@ export default async function ClinicPage({
     },
     {
       question: `Where is ${clinic.name}?`,
-      answer: `${clinic.address}${clinic.postalCode ? ` ${clinic.postalCode}` : ""}${clinic.phone ? `. Phone ${clinic.phone}` : ""}.`,
+      answer: `${where(clinic, city)}${clinic.postalCode ? ` ${clinic.postalCode}` : ""}${clinic.phone ? `. Phone ${clinic.phone}` : ""}.`,
     },
     ...(clinic.languages.value.length > 0
       ? [{
@@ -166,7 +175,11 @@ export default async function ClinicPage({
             <dl style={{ display: "grid", gap: 8, margin: 0, fontSize: 15 }}>
               <div>
                 <dt className="label">Address</dt>
-                <dd style={{ margin: 0 }}>{clinic.address} {clinic.postalCode}</dd>
+                <dd style={{ margin: 0 }}>
+                  {clinic.address
+                    ? `${clinic.address}${clinic.postalCode ? ` ${clinic.postalCode}` : ""}`
+                    : <span className="muted">No street address on file. <a href={paths.addClinic()} className="inline-link">Add it</a>.</span>}
+                </dd>
               </div>
               {clinic.phone && (
                 <div>

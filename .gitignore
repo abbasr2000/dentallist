@@ -11,3 +11,6 @@ next-env.d.ts
 # crawled pages and extractions stay local (they are large and re-derivable).
 ingest/out/crawled.json
 ingest/out/extracted.json
+
+# Next build output
+.next/

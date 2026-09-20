@@ -119,10 +119,13 @@ export function dentist(clinic: Clinic, city: City): Json {
     url: absolute(paths.clinic(clinic.citySlug, clinic.slug)),
     address: {
       "@type": "PostalAddress",
-      streetAddress: clinic.address,
+      // Only the parts we actually have. An undefined streetAddress serialises
+      // to a missing key, but writing the key out with a blank value would be
+      // a claim we cannot source.
+      ...(clinic.address ? { streetAddress: clinic.address } : {}),
       addressLocality: city.municipality ?? city.name,
       addressRegion: "ON",
-      postalCode: clinic.postalCode,
+      ...(clinic.postalCode ? { postalCode: clinic.postalCode } : {}),
       addressCountry: "CA",
     },
     geo: {

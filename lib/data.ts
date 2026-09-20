@@ -1,8 +1,23 @@
-import { CITIES, CLINICS } from "@/data/seed";
+import { CITIES as SEED_CITIES, CLINICS as SEED_CLINICS } from "@/data/seed";
+import { INGESTED_CITIES, INGESTED_CLINICS } from "@/data/ingested";
 import { PROCEDURES, type ProcedureKey } from "./procedures";
 import { completeness, type CompletenessInput } from "./strength";
 import { INDEX_FLOOR } from "./site";
 import type { City, Clinic } from "./types";
+
+/**
+ * The real dataset when the ingest has produced one, the development seed
+ * otherwise. The seed exists so the templates can be built and reviewed on a
+ * clean checkout; it must never be what a visitor sees, so the moment
+ * ingest/out/clinics.json holds anything, it wins.
+ */
+const useIngested = INGESTED_CLINICS.length > 0;
+const CITIES = useIngested ? INGESTED_CITIES : SEED_CITIES;
+const CLINICS = useIngested ? INGESTED_CLINICS : SEED_CLINICS;
+
+export function datasetIsReal(): boolean {
+  return useIngested;
+}
 
 /**
  * Read layer.

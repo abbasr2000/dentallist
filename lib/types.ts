@@ -139,11 +139,17 @@ export interface Clinic {
   citySlug: string;
   neighbourhoodSlug?: string;
 
-  address: string;
-  postalCode: string;
+  /**
+   * Real directory data is incomplete: OpenStreetMap carries a street address
+   * for about half of Ontario's practices and a phone for under 40%. A clinic
+   * with a missing field is still worth a page — the template says the field
+   * is not listed, which is honest, and the register fills it in later.
+   */
+  address?: string;
+  postalCode?: string;
   lat: number;
   lng: number;
-  phone: string;
+  phone?: string;
   website?: string;
   email?: string;
 

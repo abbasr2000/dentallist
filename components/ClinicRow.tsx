@@ -44,8 +44,7 @@ export function ClinicRow({
         </div>
 
         <div className="clinic-row__meta">
-          {clinic.address}
-          {clinic.phone ? ` · ${clinic.phone}` : ""}
+          {[clinic.address, clinic.phone].filter(Boolean).join(" · ") || "Address and phone not listed yet"}
         </div>
 
         {/* On a procedure page, lead with why this clinic is here. */}
