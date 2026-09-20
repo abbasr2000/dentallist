@@ -323,12 +323,7 @@ async function main() {
   }
 
   if (args.includes("--cities")) {
-    const found = new Set<string>();
-    for (const letter of "abcdefghijklmnopqrstuvwxyz") {
-      for (const name of await citiesMatching(letter)) found.add(name);
-      await sleep(400);
-    }
-    const sorted = [...found].sort();
+    const sorted = await allRegisterCities();
     console.log(`${sorted.length} cities on the register`);
     writeJson("ingest/out/rcdso-cities.json", sorted);
     return;
@@ -365,20 +360,45 @@ async function main() {
 }
 
 /**
- * The register's own list of cities, which is 529 entries and includes
- * spellings we would not have guessed. Falls back to the short hand-written
- * list only if the predictive endpoint is unavailable.
+ * The register's own list of cities.
+ *
+ * The predictive endpoint answers prefixes, and we do not know whether it caps
+ * a response. So a prefix that comes back suspiciously full is split into
+ * longer prefixes until it does not — a letter with three Ontario cities
+ * costs one request, and "t" costs twenty-seven rather than quietly losing
+ * Tillsonburg. Falls back to the short hand-written list only if the endpoint
+ * is unreachable.
  */
-async function allRegisterCities(): Promise<string[]> {
+const LOOKS_CAPPED = 20;
+const MAX_PREFIX = 3;
+
+export async function allRegisterCities(
+  fetchPrefix: (prefix: string) => Promise<string[]> = citiesMatching,
+): Promise<string[]> {
   const found = new Set<string>();
-  for (const letter of "abcdefghijklmnopqrstuvwxyz") {
+  const letters = "abcdefghijklmnopqrstuvwxyz".split("");
+
+  const walk = async (prefix: string): Promise<void> => {
+    let results: string[];
     try {
-      for (const name of await citiesMatching(letter)) found.add(name);
+      results = await fetchPrefix(prefix);
     } catch {
-      /* one failed prefix is not worth abandoning the run over */
+      return; // one failed prefix is not worth abandoning the run over
     }
-    await sleep(400);
+    for (const name of results) found.add(name);
+
+    if (results.length < LOOKS_CAPPED || prefix.length >= MAX_PREFIX) return;
+    for (const letter of letters) {
+      await sleep(250);
+      await walk(prefix + letter);
+    }
+  };
+
+  for (const letter of letters) {
+    await walk(letter);
+    await sleep(250);
   }
+
   return found.size > 0 ? [...found].sort() : DEFAULT_CITIES;
 }
 

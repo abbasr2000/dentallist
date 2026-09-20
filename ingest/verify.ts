@@ -8,21 +8,33 @@ import { addressKey, normalizePhone, normalizePostal, slugify, distanceMetres } 
 import { htmlToText, pickInternalLinks } from "./crawl";
 import { verifyQuote } from "./extract";
 import * as cheerio from "cheerio";
-import { parseRow, ROW_SELECTOR, selectOptions } from "./rcdso";
+import { allRegisterCities, parseRow, ROW_SELECTOR, selectOptions } from "./rcdso";
 import { mergeRecords } from "./merge";
 import { assignPlace, resolveCity, MAX_ASSIGN_KM } from "./places";
 import { scoreProcedure } from "../lib/strength";
 import type { SourceRecord } from "./lib";
 
 let passed = 0;
-function check(name: string, fn: () => void) {
-  try {
-    fn();
+const pending: Promise<void>[] = [];
+
+function check(name: string, fn: () => void | Promise<void>) {
+  const pass = () => {
     passed++;
     console.log(`  ok  ${name}`);
-  } catch (error) {
+  };
+  const fail = (error: unknown) => {
     console.error(`  FAIL ${name}: ${(error as Error).message}`);
     process.exitCode = 1;
+  };
+  try {
+    const result = fn();
+    if (result instanceof Promise) {
+      pending.push(result.then(pass, fail));
+    } else {
+      pass();
+    }
+  } catch (error) {
+    fail(error);
   }
 }
 
@@ -305,4 +317,25 @@ check("a specialist registration becomes evidence for the right procedures", () 
     "a register fact should outweigh a website mention");
 });
 
-console.log(`\n${passed} checks passed${process.exitCode ? " (with failures above)" : ""}\n`);
+console.log("\nEnumerating the register's cities");
+check("a prefix that comes back full is split further", async () => {
+  // "t" is capped at 20; "to" holds the rest.
+  const CITIES = ["Toronto", "Thunder Bay", "Timmins", "Tillsonburg", "Tecumseh"];
+  const asked: string[] = [];
+  const fetchPrefix = async (prefix: string) => {
+    asked.push(prefix);
+    const matches = CITIES.filter((c) => c.toLowerCase().startsWith(prefix));
+    // Pretend the endpoint caps a one-letter query, hiding Tillsonburg.
+    if (prefix === "t") return [...Array(20)].map((_, i) => `Filler ${i}`);
+    return matches;
+  };
+  const found = await allRegisterCities(fetchPrefix);
+  assert.ok(asked.length > 26, "a capped prefix should have been split");
+  for (const city of CITIES) {
+    assert.ok(found.includes(city), `${city} was lost`);
+  }
+});
+
+Promise.all(pending).then(() => {
+  console.log(`\n${passed} checks passed${process.exitCode ? " (with failures above)" : ""}\n`);
+});
