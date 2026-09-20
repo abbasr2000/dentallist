@@ -19,9 +19,9 @@ on:
           - rcdso
           - rcdso-probe
       rcdso_cities:
-        description: "RCDSO: comma-separated cities (blank = the default list)"
+        description: "RCDSO: comma-separated cities, or 'all' for every city on the register"
         type: string
-        default: "Scarborough"
+        default: "all"
   schedule:
     # Monthly. OSM and the register both change slowly.
     - cron: "17 4 1 * *"
@@ -58,19 +58,21 @@ jobs:
       - name: Probe the register's results page
         if: ${{ inputs.sources == 'rcdso-probe' }}
         run: |
-          npx tsx ingest/rcdso.ts --probe "${{ inputs.rcdso_cities || 'Scarborough' }}"
-          npx tsx ingest/rcdso.ts --cities
+          npx tsx ingest/rcdso.ts --probe Scarborough
+          npx tsx ingest/rcdso.ts --probe-sedation
 
       - name: RCDSO public register
         if: ${{ inputs.sources == 'rcdso' || inputs.sources == 'osm+rcdso' }}
+        env:
+          CITIES_INPUT: ${{ inputs.rcdso_cities }}
         run: |
-          if [ -n "${{ inputs.rcdso_cities }}" ]; then
-            IFS=',' read -ra CITIES <<< "${{ inputs.rcdso_cities }}"
-            for city in "${CITIES[@]}"; do
-              npx tsx ingest/rcdso.ts --city "$(echo "$city" | xargs)"
-            done
-          else
+          # "all", or empty, walks every city the register knows. Anything else
+          # is a comma-separated list, which is how a single city gets re-pulled
+          # without paying for the whole province.
+          if [ -z "$CITIES_INPUT" ] || [ "$CITIES_INPUT" = "all" ]; then
             npx tsx ingest/rcdso.ts
+          else
+            npx tsx ingest/rcdso.ts --cities-list "$CITIES_INPUT"
           fi
 
       - name: Merge into clinics
@@ -103,7 +105,18 @@ jobs:
           git add -f ingest/out/
           if git diff --staged --quiet; then
             echo "No change in ingest output."
-          else
-            git commit -m "Ingest: refresh clinic data ($(date -u +%Y-%m-%d))"
-            git push
+            exit 0
           fi
+          git commit -m "Ingest: refresh clinic data ($(date -u +%Y-%m-%d))"
+
+          # A long run can finish after someone has pushed to the branch, so
+          # rebase onto whatever landed meanwhile rather than failing. The
+          # ingest output is generated, so a rebase never conflicts meaningfully.
+          for attempt in 1 2 3 4; do
+            if git push; then exit 0; fi
+            echo "push rejected, rebasing (attempt $attempt)"
+            git pull --rebase -X ours origin "$GITHUB_REF_NAME" || git rebase --abort
+            sleep $((attempt * 3))
+          done
+          echo "Could not push the ingest output after 4 attempts." >&2
+          exit 1

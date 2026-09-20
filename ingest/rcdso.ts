@@ -249,6 +249,49 @@ async function probe(city: string): Promise<void> {
 }
 
 /**
+ * Why the sedation filter comes back empty.
+ *
+ * Its option values parse fine and the query is accepted, but every permit
+ * type returns nothing, so something about the submission differs from what
+ * the form sends. This prints the raw options and the result counts for each
+ * combination worth trying.
+ */
+async function probeSedation(): Promise<void> {
+  const $ = cheerio.load(await get(searchUrl({ City: "Toronto", DetailsCode: "All" })));
+
+  for (const name of ["SedationType", "SedationProviderType", "MbrSpecialty", "DetailsCode", "GroupCode"]) {
+    console.log(`\n=== ${name} ===`);
+    $(`select[name="${name}"] option`).each((_, option) => {
+      console.log(`  value=${JSON.stringify($(option).attr("value"))}  ${$(option).text().replace(/\s+/g, " ").trim()}`);
+    });
+  }
+
+  const types = selectOptions($, "SedationType");
+  const providers = selectOptions($, "SedationProviderType");
+  if (types.length === 0) return;
+
+  const attempts: Array<[string, Record<string, string>]> = [
+    ["type alone", { SedationType: types[0].value }],
+    ["type + All details", { SedationType: types[0].value, DetailsCode: "All" }],
+    ["type + Toronto", { SedationType: types[0].value, City: "Toronto" }],
+    ["type + provider", { SedationType: types[0].value, SedationProviderType: providers[0]?.value ?? "" }],
+    ["type + provider + Toronto", { SedationType: types[0].value, SedationProviderType: providers[0]?.value ?? "", City: "Toronto" }],
+    ["label as value", { SedationType: types[0].label }],
+  ];
+
+  console.log("\n=== ATTEMPTS ===");
+  for (const [label, params] of attempts) {
+    try {
+      const page = cheerio.load(await get(searchUrl(params)));
+      console.log(`  ${String(page(ROW_SELECTOR).length).padStart(5)} rows  ${label}  ${JSON.stringify(params)}`);
+    } catch (error) {
+      console.log(`      failed  ${label}: ${(error as Error).message}`);
+    }
+    await sleep(POLITE_DELAY_MS);
+  }
+}
+
+/**
  * Every practice the register lists for one city.
  *
  * The register returns a city in a single response — 731 dentists for
@@ -317,6 +360,11 @@ async function main() {
     return i >= 0 && next && !next.startsWith("--") ? next : undefined;
   };
 
+  if (args.includes("--probe-sedation")) {
+    await probeSedation();
+    return;
+  }
+
   if (args.includes("--probe")) {
     await probe(valueFor("--probe") ?? "Scarborough");
     return;
@@ -329,9 +377,12 @@ async function main() {
     return;
   }
 
+  const list = valueFor("--cities-list");
   const cities = valueFor("--city")
     ? [valueFor("--city")!]
-    : await allRegisterCities();
+    : list
+      ? list.split(",").map((c) => c.trim()).filter(Boolean)
+      : await allRegisterCities();
 
   console.log(`Walking ${cities.length} cities\n`);
 
@@ -466,6 +517,15 @@ async function applyRegisterEvidence(records: SourceRecord[]): Promise<void> {
   const withSpecialty = records.filter((r) => r.practitioners?.some((p) => p.specialty)).length;
   const withSedation = records.filter((r) => r.permits?.sedation).length;
   console.log(`\n${withSpecialty} rows carry a specialist, ${withSedation} carry a sedation permit`);
+
+  if (withSedation === 0 && sedationTypes.length > 0) {
+    console.log(
+      "\nNo sedation permits came back for any permit type. The filter needs\n" +
+      "something we are not sending — run --probe-sedation to see what the form\n" +
+      "actually submits. Until then the directory simply has no sedation\n" +
+      "evidence, which is the correct state: we do not infer a permit.",
+    );
+  }
 }
 
 // Guarded so that importing this module (for its exported parsers, or from a
