@@ -12,6 +12,7 @@ import { allRegisterCities, parseRow, ROW_SELECTOR, selectOptions } from "./rcds
 import { mergeRecords } from "./merge";
 import { assignPlace, resolveCity, MAX_ASSIGN_KM } from "./places";
 import { scoreProcedure } from "../lib/strength";
+import { proceduresForSpecialty } from "../lib/procedures";
 import type { SourceRecord } from "./lib";
 
 let passed = 0;
@@ -334,6 +335,49 @@ check("a prefix that comes back full is split further", async () => {
   for (const city of CITIES) {
     assert.ok(found.includes(city), `${city} was lost`);
   }
+});
+
+
+console.log("\nThe register's specialty labels");
+// Exactly as the register's own form spells them, read off the live page.
+const REGISTER_SPECIALTIES = [
+  "Dental Anesthesiology",
+  "Endodontics",
+  "Oral Medicine",
+  "Oral Pathology",
+  "Orthodontics",
+  "Oral & Maxillofacial Surgery",
+  "Oral Radiology",
+  "Pediatric Dentistry",
+  "Periodontics",
+  "Public Health Dentistry",
+  "Prosthodontics",
+];
+
+check("every clinical specialty the register names maps to a procedure", () => {
+  // Oral medicine, pathology, radiology and public health are real
+  // registrations with no patient-facing procedure page, by design.
+  const noProcedurePage = new Set([
+    "Oral Medicine", "Oral Pathology", "Oral Radiology", "Public Health Dentistry",
+  ]);
+  const lost: string[] = [];
+  for (const specialty of REGISTER_SPECIALTIES) {
+    if (noProcedurePage.has(specialty)) continue;
+    if (proceduresForSpecialty(specialty).length === 0) lost.push(specialty);
+  }
+  assert.deepEqual(lost, [], `these register specialties match nothing: ${lost.join(", ")}`);
+});
+
+check("the register's spelling differences do not lose a specialty", () => {
+  // The three that were silently dropped before the labels were normalised.
+  assert.ok(proceduresForSpecialty("Orthodontics").some((p) => p.key === "orthodontics"));
+  assert.ok(proceduresForSpecialty("Oral & Maxillofacial Surgery").some((p) => p.key === "oral-surgery"));
+  assert.ok(proceduresForSpecialty("Dental Anesthesiology").some((p) => p.key === "sedation-dentistry"));
+});
+
+check("a specialty we do not recognise matches nothing rather than everything", () => {
+  assert.equal(proceduresForSpecialty("Veterinary Dentistry").length, 0);
+  assert.equal(proceduresForSpecialty("").length, 0);
 });
 
 Promise.all(pending).then(() => {

@@ -2,7 +2,7 @@ import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import type { City, Clinic, Evidence, OpeningHours, Practitioner, Provenance } from "@/lib/types";
 import { buildOffering } from "@/lib/strength";
-import { PROCEDURES, type ProcedureKey } from "@/lib/procedures";
+import { proceduresForSpecialty, type ProcedureKey } from "@/lib/procedures";
 
 /**
  * The real dataset, read at build time from the ingest output.
@@ -94,8 +94,7 @@ function evidenceFor(record: MergedClinic): Map<ProcedureKey, Evidence[]> {
 
   for (const person of record.practitioners ?? []) {
     if (!person.specialty) continue;
-    for (const procedure of PROCEDURES) {
-      if (!procedure.relatedSpecialties?.includes(person.specialty)) continue;
+    for (const procedure of proceduresForSpecialty(person.specialty)) {
       add(procedure.key, {
         kind: "rcdso-specialist",
         detail: `${person.fullName} is registered with the RCDSO as a specialist in ${person.specialty.toLowerCase()}.`,

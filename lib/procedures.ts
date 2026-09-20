@@ -219,6 +219,45 @@ export const PROCEDURES: Procedure[] = [
 
 const BY_KEY = new Map(PROCEDURES.map((p) => [p.key, p]));
 
+
+/**
+ * Whether a specialty named on the RCDSO register is one of a procedure's.
+ *
+ * The register's own labels are not the formal college names this taxonomy was
+ * written with. It says "Orthodontics", not "Orthodontics and Dentofacial
+ * Orthopedics"; "Oral & Maxillofacial Surgery" with an ampersand; and "Dental
+ * Anesthesiology" in American spelling. Comparing the strings directly lost
+ * three specialties of seven silently — including orthodontics and oral
+ * surgery, which between them are the largest body of specialists in Ontario.
+ *
+ * So both sides are normalised before comparison, and a check asserts the
+ * register's real labels all still match.
+ */
+function canonicalSpecialty(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/anaesth/g, "anesth")
+    // The register says "Dental Anesthesiology"; the college's formal name is
+    // "Dental Anaesthesia". Same registration, two words for it.
+    .replace(/anesthesiolog\w*/g, "anesthesia")
+    .replace(/\band dentofacial orthopedics\b/g, "")
+    .replace(/\bdentistry\b/g, "")
+    .replace(/[^a-z]+/g, " ")
+    .trim();
+}
+
+export function matchesSpecialty(procedure: Procedure, registerLabel: string): boolean {
+  const target = canonicalSpecialty(registerLabel);
+  if (!target) return false;
+  return (procedure.relatedSpecialties ?? []).some((s) => canonicalSpecialty(s) === target);
+}
+
+/** Every procedure a register specialty is evidence for. */
+export function proceduresForSpecialty(registerLabel: string): Procedure[] {
+  return PROCEDURES.filter((p) => matchesSpecialty(p, registerLabel));
+}
+
 export function getProcedure(key: string): Procedure | undefined {
   return BY_KEY.get(key as ProcedureKey);
 }

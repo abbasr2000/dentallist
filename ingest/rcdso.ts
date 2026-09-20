@@ -249,13 +249,27 @@ async function probe(city: string): Promise<void> {
 }
 
 /**
- * Why the sedation filter comes back empty.
+ * The sedation filter on the dentist search returns nothing, and that is not a
+ * bug in this code.
  *
- * Its option values parse fine and the query is accepted, but every permit
- * type returns nothing, so something about the submission differs from what
- * the form sends. This prints the raw options and the result counts for each
- * combination worth trying.
+ * Probed every combination worth trying — the permit code alone, with a city,
+ * with a provider type, with the label in place of the code — and all six came
+ * back with zero rows, while the specialty filter beside it works with codes of
+ * exactly the same shape ("AN", "EN", "OR"). Sedation and CT scanner permits
+ * are issued to a *facility*, not to a dentist, and the College inspects
+ * facilities through a separate programme. The dentist search has the fields
+ * but nothing behind them.
+ *
+ * So the directory carries no sedation or CT evidence today, and it should not:
+ * a facility permit is a fact about a building and we have no source for it
+ * yet. Finding the facility register is its own job. What we do not do is
+ * infer one from a clinic saying "we offer sedation" — that is the difference
+ * between this directory and the others.
  */
+const SEDATION_IS_A_FACILITY_PERMIT = true;
+void SEDATION_IS_A_FACILITY_PERMIT;
+
+/** Prints the register's own filter codes and what each sedation query returns. */
 async function probeSedation(): Promise<void> {
   const $ = cheerio.load(await get(searchUrl({ City: "Toronto", DetailsCode: "All" })));
 
@@ -497,6 +511,8 @@ async function applyRegisterEvidence(records: SourceRecord[]): Promise<void> {
     await sleep(POLITE_DELAY_MS);
   }
 
+  // Left running because it costs four requests and would start working the
+  // day the register joins the two searches up. See the note below.
   for (const sedation of sedationTypes) {
     try {
       const matches = await registrationsMatching({ SedationType: sedation.value });
@@ -520,10 +536,7 @@ async function applyRegisterEvidence(records: SourceRecord[]): Promise<void> {
 
   if (withSedation === 0 && sedationTypes.length > 0) {
     console.log(
-      "\nNo sedation permits came back for any permit type. The filter needs\n" +
-      "something we are not sending — run --probe-sedation to see what the form\n" +
-      "actually submits. Until then the directory simply has no sedation\n" +
-      "evidence, which is the correct state: we do not infer a permit.",
+      "\nNo sedation permits, as expected — see the note on SEDATION_IS_A_FACILITY_PERMIT.",
     );
   }
 }
