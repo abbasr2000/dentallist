@@ -91,13 +91,17 @@ jobs:
         if: ${{ always() && inputs.sources != 'rcdso-probe' }}
         run: |
           {
-            echo "## Ingest results"
+            echo "## Files"
             echo
             for f in ingest/out/*.json; do
               [ -e "$f" ] || continue
               echo "- \`$f\` — $(node -e "console.log(JSON.parse(require('fs').readFileSync('$f','utf8')).length)") records"
             done
+            echo
           } >> "$GITHUB_STEP_SUMMARY"
+          # Record counts say a run finished, not that it went well. The report
+          # writes the numbers that would be wrong if something were wrong.
+          npx tsx ingest/report.ts
 
       - uses: actions/upload-artifact@v4
         if: ${{ always() && inputs.sources != 'rcdso-probe' }}
