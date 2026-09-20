@@ -38,12 +38,14 @@ create that problem:
 ## Structure
 
 ```
-app/                       Next.js App Router
+app/                       Next.js App Router, exported to static HTML
   [region]/                Ontario overview
-  [region]/[city]/         one city
+  [region]/[city]/         one city — and, for a procedure key, that
+                           procedure across the whole province
   [region]/[city]/[procedure]/   one procedure in one city
   clinic/[city]/[slug]/    clinic profile
   llms.txt/                generated from live data on every build
+components/RegionProcedure.tsx  the province-wide procedure page
 lib/
   procedures.ts   15 procedures, with the shorthand people search (exo, endo, RCT, perio)
   types.ts        clinic model; provenance on every field
@@ -53,8 +55,23 @@ lib/
   tiers.ts        how evidence is described in lists
 ingest/           the data pipeline — see ingest/README.md
 supabase/         database schema
-data/seed.ts      sample data for template development, NOT real data
+data/
+  ingested.ts     the real dataset, read from ingest/out/clinics.json at build
+  claimed.ts      listings an owner has confirmed, and what they supplied
+  seed.ts         sample data for template development, NOT real data
 ```
+
+## It is static HTML
+
+`npm run build` writes `out/` — one `.html` file per page, no server and no
+database in the request path. A crawler gets finished HTML the moment it asks,
+which is most of the point. Supabase is for letting clinics edit their own
+listings; even then it will feed the build rather than serve it.
+
+Two URL shapes share one route, because Next cannot tell `/ontario/toronto/`
+from `/ontario/orthodontics/` apart at one level. `/[region]/[city]/` resolves a
+procedure key to the province-wide procedure page and anything else to a city.
+The build throws if a city slug ever collides with a procedure key.
 
 ## Running it
 
@@ -76,8 +93,23 @@ canonicals to the city page and stays out of the sitemap. Shipping thousands of
 near-empty pages is how programmatic SEO earns a manual action; `INDEX_FLOOR` in
 `lib/site.ts` is the guard.
 
+## Deploying
+
+Connect the repository at vercel.com/new; the defaults are right. Nothing else
+is needed — `vercel.json` points at `out/`. `.github/workflows/deploy.yml` is an
+alternative for deploying from CI instead, and no-ops until `VERCEL_TOKEN` is
+set.
+
 ## State
 
-The site builds and the templates render against seed data. The ingest scripts
-are written but three of their stages have not been run against live endpoints —
-see `ingest/README.md` for exactly which, and what to check first.
+Live on real data. OpenStreetMap gives 2,770 Ontario practices; the RCDSO
+register supplies the specialty registrations the ranking is built on, and is
+pulled city by city from its public search. `ingest/README.md` has the details,
+including the two things that are known not to work:
+
+- **Sedation and CT permits are not available.** They are issued to a facility,
+  not a dentist, and the dentist search has the fields with nothing behind them
+  — probed six ways, zero results every time. The directory therefore carries no
+  sedation evidence, which is correct: it is not something to infer.
+- **City assignment is nearest-centroid, not a boundary lookup.** A clinic close
+  to a municipal line can land on the wrong side of it.
