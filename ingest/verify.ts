@@ -266,4 +266,43 @@ check("the assignment radius is a stated limit, not unbounded", () => {
   assert.ok(MAX_ASSIGN_KM > 0 && MAX_ASSIGN_KM <= 30, `radius ${MAX_ASSIGN_KM}km`);
 });
 
+console.log("\nRegister plus map, end to end");
+check("two register rows and a map node become one clinic with both dentists", () => {
+  const merged = mergeRecords([
+    rec({ source: "rcdso", sourceId: "a", name: "A Dental Centre", address: "3630 Lawrence Ave E",
+          city: "Scarborough", phone: "4169451000",
+          practitioners: [{ fullName: "Dr One", registrationNumber: "1", specialty: "Periodontics" }] }),
+    rec({ source: "rcdso", sourceId: "b", name: "A Dental Centre", address: "3630 Lawrence Ave E",
+          city: "Scarborough", phone: "4169451000",
+          practitioners: [{ fullName: "Dr Two", registrationNumber: "2" }], permits: { sedation: true } }),
+    rec({ source: "osm", sourceId: "node/1", name: "A Dental", phone: "4169451000",
+          lat: 43.758, lng: -79.2199, website: "https://example.invalid" }),
+  ]);
+
+  assert.equal(merged.length, 1, `got ${merged.length} clinics`);
+  const clinic = merged[0];
+  assert.equal(clinic.name, "A Dental Centre", "the registered name should win");
+  assert.equal(clinic.address, "3630 Lawrence Ave E");
+  assert.equal(clinic.website, "https://example.invalid", "the map's website should carry over");
+  assert.equal(clinic.lat, 43.758, "the map's coordinates should carry over");
+  assert.equal(clinic.permits.sedation, true);
+  assert.equal(clinic.practitioners.length, 2, "both dentists should be listed");
+  assert.equal(
+    clinic.practitioners.find((p) => p.registrationNumber === "1")?.specialty,
+    "Periodontics",
+  );
+});
+
+check("a specialist registration becomes evidence for the right procedures", () => {
+  const periodontist = [{
+    kind: "rcdso-specialist" as const,
+    detail: "registered specialist in periodontics",
+    provenance: { source: "rcdso" as const, checkedAt: "2026-09-20" },
+  }];
+  const score = scoreProcedure(periodontist);
+  assert.ok(score > 0, "a register specialty should score above zero");
+  assert.ok(score > scoreProcedure([{ ...periodontist[0], kind: "site-mention" }]),
+    "a register fact should outweigh a website mention");
+});
+
 console.log(`\n${passed} checks passed${process.exitCode ? " (with failures above)" : ""}\n`);
