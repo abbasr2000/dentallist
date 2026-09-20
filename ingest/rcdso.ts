@@ -23,7 +23,7 @@
  */
 
 import * as cheerio from "cheerio";
-import { writeJson, normalizePhone, normalizePostal, slugify, sleep, type SourceRecord } from "./lib";
+import { writeJson, readJson, normalizePhone, normalizePostal, slugify, sleep, type SourceRecord } from "./lib";
 
 const ORIGIN = "https://www.rcdso.org";
 const SEARCH_URL = `${ORIGIN}/find-a-dentist/search-results`;
@@ -385,9 +385,8 @@ async function main() {
   }
 
   if (args.includes("--cities")) {
-    const sorted = await allRegisterCities();
+    const sorted = await registerCities(true);
     console.log(`${sorted.length} cities on the register`);
-    writeJson("ingest/out/rcdso-cities.json", sorted);
     return;
   }
 
@@ -396,7 +395,7 @@ async function main() {
     ? [valueFor("--city")!]
     : list
       ? list.split(",").map((c) => c.trim()).filter(Boolean)
-      : await allRegisterCities();
+      : await registerCities(args.includes("--refresh-cities"));
 
   console.log(`Walking ${cities.length} cities\n`);
 
@@ -436,6 +435,27 @@ async function main() {
  */
 const LOOKS_CAPPED = 20;
 const MAX_PREFIX = 3;
+const CITIES_CACHE = "ingest/out/rcdso-cities.json";
+
+/**
+ * The walk is expensive — every prefix that looks capped costs another 26
+ * requests, so a full enumeration can run to thousands of them. The list of
+ * Ontario municipalities with a dentist in them barely changes, so it is
+ * cached in the repo and re-walked only when asked. Pass --refresh-cities to
+ * force one.
+ */
+export async function registerCities(refresh = false): Promise<string[]> {
+  if (!refresh) {
+    const cached = readJson<string[]>(CITIES_CACHE);
+    if (cached && cached.length > 0) {
+      console.log(`${cached.length} cities from ${CITIES_CACHE} (--refresh-cities to re-walk)`);
+      return cached;
+    }
+  }
+  const walked = await allRegisterCities();
+  if (walked.length > 0) writeJson(CITIES_CACHE, walked);
+  return walked;
+}
 
 export async function allRegisterCities(
   fetchPrefix: (prefix: string) => Promise<string[]> = citiesMatching,
