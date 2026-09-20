@@ -32,7 +32,11 @@ permissions:
 jobs:
   ingest:
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    # A full register walk is 529 cities fetched one at a time, and some of
+    # those pages are megabytes. Measured at over two hours. The walk
+    # checkpoints, so a run cut short here is resumed by the next one rather
+    # than lost — this ceiling only decides how many runs it takes.
+    timeout-minutes: 350
 
     steps:
       - uses: actions/checkout@v4
