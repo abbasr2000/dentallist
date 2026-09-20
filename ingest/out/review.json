@@ -1,5 +1,99 @@
 [
   {
+    "slug": "smiles-on-queen-dentistry",
+    "name": "Smiles on Queen Dentistry",
+    "citySlug": "mississauga",
+    "cityName": "Mississauga",
+    "cityDistanceKm": 0,
+    "address": "301 Queen St S #8",
+    "postalCode": "L7E 2B1",
+    "phone": "9055332030",
+    "website": "https://smiledentistry.ca",
+    "lat": 43.873562,
+    "lng": -79.7276169,
+    "practitioners": [
+      {
+        "fullName": "Stephanie Harper",
+        "registrationNumber": "96803"
+      },
+      {
+        "fullName": "Hedyeh Norsen",
+        "registrationNumber": "96836"
+      },
+      {
+        "fullName": "Lawrence Hung",
+        "registrationNumber": "96808"
+      }
+    ],
+    "permits": {
+      "sedation": false,
+      "cbct": false
+    },
+    "sources": [
+      {
+        "source": "rcdso",
+        "sourceId": "smiles-on-queen-dentistry-301-queen-st-s-8-9055332030"
+      },
+      {
+        "source": "rcdso",
+        "sourceId": "smiles-on-queen-dentistry-301-queen-st-s-8-9055332030"
+      },
+      {
+        "source": "rcdso",
+        "sourceId": "smiles-on-queen-dentistry-301-queen-st-s-8-9055332030"
+      },
+      {
+        "source": "rcdso",
+        "sourceId": "smiles-on-queen-dentistry-301-queen-st-s-8-9055332030"
+      },
+      {
+        "source": "rcdso",
+        "sourceId": "smiles-on-queen-dentistry-301-queen-st-s-8-9055332030"
+      },
+      {
+        "source": "rcdso",
+        "sourceId": "smiles-on-queen-dentistry-301-queen-st-s-8-9055332030"
+      },
+      {
+        "source": "rcdso",
+        "sourceId": "smiles-on-queen-dentistry-301-queen-st-s-8-9055332030"
+      },
+      {
+        "source": "rcdso",
+        "sourceId": "smiles-on-queen-dentistry-301-queen-st-s-8-9055332030"
+      },
+      {
+        "source": "rcdso",
+        "sourceId": "smiles-on-queen-dentistry-301-queen-st-s-8-9055332030"
+      },
+      {
+        "source": "rcdso",
+        "sourceId": "smiles-on-queen-dentistry-301-queen-st-s-8-9055332030"
+      },
+      {
+        "source": "rcdso",
+        "sourceId": "smiles-on-queen-dentistry-301-queen-st-s-8-9055332030"
+      },
+      {
+        "source": "rcdso",
+        "sourceId": "smiles-on-queen-dentistry-301-queen-st-s-8-9055332030"
+      },
+      {
+        "source": "rcdso",
+        "sourceId": "smiles-on-queen-dentistry-301-queen-st-s-8-9055332030"
+      },
+      {
+        "source": "osm",
+        "sourceId": "node/6429413660"
+      },
+      {
+        "source": "osm",
+        "sourceId": "node/13356550261"
+      }
+    ],
+    "reviewReason": "matched on name and proximity, not on phone or address"
+  },
+  {
     "slug": "dentistry-on-university",
     "name": "Dentistry on University",
     "citySlug": "toronto",
@@ -25,7 +119,7 @@
     "reviewReason": "matched on name and proximity, not on phone or address"
   },
   {
-    "slug": "sunshine-dental",
+    "slug": "sunshine-dental-2",
     "name": "Sunshine Dental",
     "citySlug": "scarborough",
     "cityName": "Scarborough",
@@ -46,36 +140,6 @@
       {
         "source": "osm",
         "sourceId": "node/13702859082"
-      }
-    ],
-    "reviewReason": "matched on name and proximity, not on phone or address"
-  },
-  {
-    "slug": "etobicoke-smiles-dental",
-    "name": "Etobicoke Smiles Dental",
-    "citySlug": "etobicoke",
-    "cityName": "Etobicoke",
-    "municipality": "Toronto",
-    "cityDistanceKm": 5.21,
-    "address": "577 Burnhamthorpe Road",
-    "postalCode": "M9C 2Y3",
-    "phone": "4166212222",
-    "website": "https://etobicokesmilesdental.ca/",
-    "lat": 43.6444083,
-    "lng": -79.5688568,
-    "practitioners": [],
-    "permits": {
-      "sedation": false,
-      "cbct": false
-    },
-    "sources": [
-      {
-        "source": "osm",
-        "sourceId": "node/4030020004"
-      },
-      {
-        "source": "osm",
-        "sourceId": "node/9733756700"
       }
     ],
     "reviewReason": "matched on name and proximity, not on phone or address"
@@ -132,94 +196,7 @@
     "reviewReason": "matched on name and proximity, not on phone or address"
   },
   {
-    "slug": "smiles-on-queen",
-    "name": "Smiles on Queen",
-    "citySlug": "bolton",
-    "cityName": "Bolton",
-    "cityDistanceKm": 0.74,
-    "address": "301 Queen Street South",
-    "postalCode": "L7E 2B1",
-    "phone": "9055332030",
-    "website": "https://smiledentistry.ca",
-    "lat": 43.873562,
-    "lng": -79.7276169,
-    "practitioners": [],
-    "permits": {
-      "sedation": false,
-      "cbct": false
-    },
-    "sources": [
-      {
-        "source": "osm",
-        "sourceId": "node/6429413660"
-      },
-      {
-        "source": "osm",
-        "sourceId": "node/13356550261"
-      }
-    ],
-    "reviewReason": "matched on name and proximity, not on phone or address"
-  },
-  {
-    "slug": "maple-dental",
-    "name": "Maple Dental",
-    "citySlug": "maple",
-    "cityName": "Maple",
-    "municipality": "Vaughan",
-    "cityDistanceKm": 2.08,
-    "phone": "9058325570",
-    "website": "https://www.mapledental.com",
-    "lat": 43.8518674,
-    "lng": -79.5336953,
-    "practitioners": [],
-    "permits": {
-      "sedation": false,
-      "cbct": false
-    },
-    "sources": [
-      {
-        "source": "osm",
-        "sourceId": "node/7195257550"
-      },
-      {
-        "source": "osm",
-        "sourceId": "node/13814943116"
-      }
-    ],
-    "reviewReason": "matched on name and proximity, not on phone or address"
-  },
-  {
-    "slug": "estrabillo-dental-group",
-    "name": "Estrabillo Dental Group",
-    "citySlug": "ancaster",
-    "cityName": "Ancaster",
-    "municipality": "Hamilton",
-    "cityDistanceKm": 0.75,
-    "address": "Wilson Street East",
-    "postalCode": "L9G 2B8",
-    "phone": "8883470177",
-    "website": "https://www.drestrabillo.com/",
-    "lat": 43.2229906,
-    "lng": -79.9798354,
-    "practitioners": [],
-    "permits": {
-      "sedation": false,
-      "cbct": false
-    },
-    "sources": [
-      {
-        "source": "osm",
-        "sourceId": "node/12919981701"
-      },
-      {
-        "source": "osm",
-        "sourceId": "node/12920058501"
-      }
-    ],
-    "reviewReason": "matched on name and proximity, not on phone or address"
-  },
-  {
-    "slug": "upper-james-dental",
+    "slug": "upper-james-dental-2",
     "name": "Upper James Dental",
     "citySlug": "hamilton",
     "cityName": "Hamilton",
