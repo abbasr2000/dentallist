@@ -16,6 +16,7 @@ import { PROCEDURES, proceduresForSpecialty } from "../lib/procedures";
 import { resolveSiteUrl } from "../lib/site";
 import { osmStreetName, streetFrom } from "./streetname";
 import { clusterPoints, streetNamesFrom } from "./streets";
+import { locate, placeIndex, tally } from "./locate";
 import type { SourceRecord } from "./lib";
 
 let passed = 0;
@@ -562,6 +563,78 @@ check("street names come from the addresses, commonest first", () => {
     { address: "#4" },
   ] as never;
   assert.deepEqual(streetNamesFrom(records), ["Yonge Street", "Bay Street"]);
+});
+
+console.log("\nPlacing a practice");
+
+// Real coordinates, so the distances in these checks are real distances.
+const GAZETTEER = placeIndex([
+  { name: "Toronto", slug: "toronto", kind: "city", lat: 43.6532, lng: -79.3832 },
+  { name: "Ottawa", slug: "ottawa", kind: "city", lat: 45.4215, lng: -75.6972 },
+  { name: "Kanata", slug: "kanata", kind: "suburb", lat: 45.3088, lng: -75.8983 },
+  { name: "Stittsville", slug: "stittsville", kind: "village", lat: 45.2612, lng: -75.9163 },
+  { name: "Bradford", slug: "bradford", kind: "town", lat: 44.1140, lng: -79.5640 },
+  { name: "Orangeville", slug: "orangeville", kind: "town", lat: 43.9190, lng: -80.0940 },
+  { name: "Hamilton", slug: "hamilton", kind: "city", lat: 43.2557, lng: -79.8711 },
+]);
+
+const STREETS = {
+  "Carling Avenue": [{ lat: 45.3833, lng: -75.7500, ways: 140 }],
+  "Main Street": [
+    { lat: 43.2557, lng: -79.8700, ways: 90 },
+    { lat: 45.4200, lng: -75.6900, ways: 40 },
+  ],
+  "Edward Street": [{ lat: 43.6560, lng: -79.3870, ways: 12 }],
+};
+
+check("one street of that name settles it, whatever the dentists say", () => {
+  // The real case: dentists registered in six places, the practice on Carling.
+  const found = locate(
+    "Unit-4 1295 Carling Ave",
+    ["Bradford", "Ottawa", "Bradford", "Kanata", "Orangeville", "Stittsville"],
+    STREETS,
+    GAZETTEER,
+  );
+  assert.ok(found, "should have placed it");
+  assert.ok(Math.abs(found.lat - 45.3833) < 0.01, `landed at ${found.lat}`);
+  assert.equal(found.basis, "street-and-city");
+});
+
+check("a repeated street name is settled by where the dentists are", () => {
+  const hamilton = locate("100 Main St", ["Hamilton", "Hamilton"], STREETS, GAZETTEER);
+  assert.ok(hamilton && Math.abs(hamilton.lat - 43.2557) < 0.05, "should be the Hamilton one");
+
+  const ottawa = locate("100 Main St", ["Ottawa", "Kanata"], STREETS, GAZETTEER);
+  assert.ok(ottawa && Math.abs(ottawa.lat - 45.42) < 0.05, "should be the Ottawa one");
+});
+
+check("several nearby cities outweigh one distant city with more dentists", () => {
+  // Three Ottawa-area registrations against four in Bradford, 350 km away.
+  const found = locate(
+    "1295 Carling Ave",
+    ["Bradford", "Bradford", "Bradford", "Bradford", "Ottawa", "Kanata", "Stittsville"],
+    STREETS,
+    GAZETTEER,
+  );
+  assert.ok(found && Math.abs(found.lat - 45.3833) < 0.05, "should still be Ottawa's Carling");
+});
+
+check("no street and no known city places nothing at all", () => {
+  // An unplaced clinic is honest. One on the wrong city page is not.
+  assert.equal(locate("#205", ["Nowhereville"], STREETS, GAZETTEER), undefined);
+  assert.equal(locate(undefined, [], STREETS, GAZETTEER), undefined);
+});
+
+check("no usable street falls back to the city, and says so", () => {
+  const found = locate("#205", ["Hamilton"], STREETS, GAZETTEER);
+  assert.equal(found?.basis, "city-only");
+});
+
+check("votes are counted, not just collected", () => {
+  assert.deepEqual(tally(["Ottawa", " Ottawa ", "Kanata", undefined, ""]), [
+    { name: "Ottawa", votes: 2 },
+    { name: "Kanata", votes: 1 },
+  ]);
 });
 
 /* ------------------------------------------------------ the canonical host */
