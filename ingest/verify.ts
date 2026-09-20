@@ -9,6 +9,7 @@ import { htmlToText, pickInternalLinks } from "./crawl";
 import { verifyQuote } from "./extract";
 import { parseResultRow } from "./rcdso";
 import { mergeRecords } from "./merge";
+import { assignPlace, resolveCity, MAX_ASSIGN_KM } from "./places";
 import { scoreProcedure } from "../lib/strength";
 import type { SourceRecord } from "./lib";
 
@@ -185,6 +186,30 @@ check("permits and practitioners carry across sources", () => {
   assert.equal(merged[0].practitioners[0].specialty, "Endodontics");
   assert.equal(merged[0].permits.sedation, true);
   assert.equal(merged[0].lat, 43.7);
+});
+
+console.log("\nCity assignment from coordinates");
+check("a downtown Toronto clinic lands in Toronto, not a borough", () => {
+  const placed = assignPlace(43.6532, -79.3832);
+  assert.equal(placed?.cityName, "Toronto", `got ${placed?.cityName}`);
+});
+check("a High Park clinic lands in Toronto, not York", () => {
+  const placed = assignPlace(43.6536, -79.4647);
+  assert.equal(placed?.cityName, "Toronto", `got ${placed?.cityName} at ${placed?.distanceKm.toFixed(2)}km`);
+});
+check("a Scarborough clinic lands in Scarborough", () => {
+  const placed = assignPlace(43.7595, -79.2276);
+  assert.equal(placed?.cityName, "Scarborough", `got ${placed?.cityName}`);
+});
+check("coordinates beat a bare city tag", () => {
+  // 3630 Lawrence Ave E is tagged "Toronto" by some mappers; it is Scarborough.
+  assert.equal(resolveCity("Toronto", 43.7595, -79.2276)?.cityName, "Scarborough");
+});
+check("a point far from every known place is left unassigned", () => {
+  assert.equal(assignPlace(51.5, -85.0), undefined); // northern Ontario bush
+});
+check("the assignment radius is a stated limit, not unbounded", () => {
+  assert.ok(MAX_ASSIGN_KM > 0 && MAX_ASSIGN_KM <= 30, `radius ${MAX_ASSIGN_KM}km`);
 });
 
 console.log(`\n${passed} checks passed${process.exitCode ? " (with failures above)" : ""}\n`);

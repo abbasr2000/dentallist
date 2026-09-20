@@ -20,11 +20,16 @@ import {
   writeJson,
   type SourceRecord,
 } from "./lib";
+import { resolveCity } from "./places";
 
 interface MergedClinic {
   slug: string;
   name: string;
   citySlug: string;
+  cityName?: string;
+  municipality?: string;
+  /** How far the clinic is from the centroid we assigned it to, in km. */
+  cityDistanceKm?: number;
   address?: string;
   postalCode?: string;
   phone?: string;
@@ -59,10 +64,17 @@ export function mergeRecords(records: SourceRecord[]): MergedClinic[] {
   const byAddress = new Map<string, MergedClinic>();
   const clinics: MergedClinic[] = [];
 
-  const blank = (r: SourceRecord): MergedClinic => ({
+  const blank = (r: SourceRecord): MergedClinic => {
+    // OSM tags addr:city on only about a fifth of Ontario practices, so the
+    // city is normally derived from the coordinates. See ingest/places.ts.
+    const place = resolveCity(r.city, r.lat, r.lng);
+    return {
     slug: "",
     name: r.name,
-    citySlug: slugify(r.city ?? "unknown"),
+    citySlug: place?.citySlug ?? "unassigned",
+    cityName: place?.cityName,
+    municipality: place?.municipality,
+    cityDistanceKm: place?.distanceKm,
     address: r.address,
     postalCode: r.postalCode,
     phone: r.phone,
@@ -72,7 +84,8 @@ export function mergeRecords(records: SourceRecord[]): MergedClinic[] {
     practitioners: [],
     permits: { sedation: false, cbct: false },
     sources: [],
-  });
+    };
+  };
 
   const absorb = (target: MergedClinic, r: SourceRecord) => {
     // Prefer the value we already have; only fill gaps. A source that arrives
@@ -173,7 +186,11 @@ function main() {
   const needsReview = clinics.filter((c) => c.reviewReason).length;
   const withSite = clinics.filter((c) => c.website).length;
 
+  const assigned = clinics.filter((c) => c.citySlug !== "unassigned").length;
+  const cityCount = new Set(clinics.map((c) => c.citySlug)).size;
+
   console.log(`  ${clinics.length} distinct clinics`);
+  console.log(`  ${assigned} placed in a city (${cityCount} cities), ${clinics.length - assigned} unassigned`);
   console.log(`  ${bothSources} confirmed by both sources`);
   console.log(`  ${withSite} with a website to crawl`);
   if (needsReview > 0) {
