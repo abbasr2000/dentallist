@@ -1,0 +1,263 @@
+@import "tailwindcss";
+
+/*
+ * Visual identity.
+ *
+ * The palette is deliberately not the mint-and-white of every dental site.
+ * Ground is a warm off-white, ink is a deep desaturated green-black, and the
+ * accent is a dark forest-teal that holds up as text on light ground. Evidence
+ * that comes from the RCDSO register gets its own slate-blue so a patient can
+ * tell a verified fact from a clinic's own description at a glance — that
+ * distinction is the whole product.
+ */
+
+@theme {
+  --color-ground: #faf9f6;
+  --color-surface: #ffffff;
+  --color-surface-2: #f2f1ec;
+  --color-ink: #151d1b;
+  --color-ink-soft: #4a5654;
+  --color-ink-faint: #7d8a87;
+  --color-rule: #e2e0d8;
+  --color-rule-strong: #c8c5b9;
+
+  --color-accent: #0f5c53;
+  --color-accent-ink: #0b463f;
+  --color-accent-soft: #e0efeb;
+
+  /* Register-backed evidence. Distinct hue on purpose. */
+  --color-verified: #2f4f6b;
+  --color-verified-soft: #e3ebf2;
+
+  --color-urgent: #9c4325;
+  --color-urgent-soft: #f8e9e2;
+
+  --font-display: "Bricolage Grotesque", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "Public Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background: var(--color-ground);
+    color: var(--color-ink);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.6;
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    text-wrap: balance;
+    margin: 0;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  a:focus-visible,
+  button:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  ul, ol { margin: 0; padding: 0; list-style: none; }
+}
+
+@layer components {
+  .wrap {
+    max-width: 1080px;
+    margin-inline: auto;
+    padding-inline: 20px;
+  }
+
+  .prose-col { max-width: 68ch; }
+
+  /* --- eyebrow / label ------------------------------------------------- */
+  .label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-ink-faint);
+  }
+
+  /* --- evidence chips -------------------------------------------------- */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    letter-spacing: 0.02em;
+    padding: 3px 9px;
+    border-radius: 3px;
+    background: var(--color-surface-2);
+    color: var(--color-ink-soft);
+    border: 1px solid var(--color-rule);
+    white-space: nowrap;
+  }
+
+  /* Register-backed: the fact came from the RCDSO public register. */
+  .chip--verified {
+    background: var(--color-verified-soft);
+    color: var(--color-verified);
+    border-color: color-mix(in srgb, var(--color-verified) 25%, transparent);
+    font-weight: 500;
+  }
+
+  .chip--urgent {
+    background: var(--color-urgent-soft);
+    color: var(--color-urgent);
+    border-color: color-mix(in srgb, var(--color-urgent) 25%, transparent);
+  }
+
+  .chip--accent {
+    background: var(--color-accent-soft);
+    color: var(--color-accent-ink);
+    border-color: color-mix(in srgb, var(--color-accent) 22%, transparent);
+  }
+
+  /* --- strength meter -------------------------------------------------- */
+  .meter {
+    display: block;
+    width: 100%;
+    height: 4px;
+    background: var(--color-rule);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .meter > i {
+    display: block;
+    height: 100%;
+    background: var(--color-accent);
+    border-radius: 2px;
+  }
+  .meter--verified > i { background: var(--color-verified); }
+
+  /* --- clinic row ------------------------------------------------------ */
+  .clinic-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px 24px;
+    padding: 22px 0;
+    border-bottom: 1px solid var(--color-rule);
+    align-items: start;
+  }
+
+  .clinic-row__name {
+    font-family: var(--font-display);
+    font-size: 1.12rem;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+  }
+  .clinic-row__name a:hover { color: var(--color-accent-ink); text-decoration: underline; text-underline-offset: 3px; }
+
+  .clinic-row__meta {
+    font-size: 14.5px;
+    color: var(--color-ink-soft);
+  }
+
+  .clinic-row__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+  }
+
+  .clinic-row__score {
+    text-align: right;
+    min-width: 92px;
+  }
+  .clinic-row__score b {
+    font-family: var(--font-display);
+    font-size: 1.35rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    display: block;
+    line-height: 1.1;
+  }
+
+  /* --- stat strip ------------------------------------------------------ */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+    gap: 1px;
+    background: var(--color-rule);
+    border: 1px solid var(--color-rule);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .stats > div { background: var(--color-surface); padding: 14px 16px; }
+  .stats b {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 1.55rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+  }
+  .stats span { display: block; font-size: 12.5px; color: var(--color-ink-faint); margin-top: 4px; }
+
+  /* --- panels ---------------------------------------------------------- */
+  .panel {
+    background: var(--color-surface);
+    border: 1px solid var(--color-rule);
+    border-radius: 4px;
+    padding: 20px 22px;
+  }
+
+  .panel--sponsored {
+    border-color: color-mix(in srgb, var(--color-accent) 30%, transparent);
+    background: var(--color-accent-soft);
+  }
+
+  /* --- links ----------------------------------------------------------- */
+  .tile-link {
+    display: block;
+    padding: 14px 16px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-rule);
+    border-radius: 4px;
+  }
+  .tile-link:hover { border-color: var(--color-rule-strong); }
+
+  .inline-link {
+    color: var(--color-accent-ink);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
+  }
+
+  /* --- source receipt -------------------------------------------------- */
+  .receipt {
+    font-size: 12.5px;
+    color: var(--color-ink-faint);
+    font-family: var(--font-mono);
+    letter-spacing: 0.01em;
+  }
+  .receipt a { text-decoration: underline; text-underline-offset: 2px; }
+}
+
+@media (max-width: 640px) {
+  .clinic-row { grid-template-columns: minmax(0, 1fr); }
+  .clinic-row__score { text-align: left; min-width: 0; }
+}
