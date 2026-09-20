@@ -1,0 +1,273 @@
+[
+  {
+    "slug": "dentistry-on-university",
+    "name": "Dentistry on University",
+    "citySlug": "unknown",
+    "lat": 43.6484531,
+    "lng": -79.3855101,
+    "practitioners": [],
+    "permits": {
+      "sedation": false,
+      "cbct": false
+    },
+    "sources": [
+      {
+        "source": "osm",
+        "sourceId": "node/2705571830"
+      },
+      {
+        "source": "osm",
+        "sourceId": "node/6317180385"
+      }
+    ],
+    "reviewReason": "matched on name and proximity, not on phone or address"
+  },
+  {
+    "slug": "sunshine-dental",
+    "name": "Sunshine Dental",
+    "citySlug": "unknown",
+    "lat": 43.7835243,
+    "lng": -79.2529585,
+    "practitioners": [],
+    "permits": {
+      "sedation": false,
+      "cbct": false
+    },
+    "sources": [
+      {
+        "source": "osm",
+        "sourceId": "node/3199464001"
+      },
+      {
+        "source": "osm",
+        "sourceId": "node/13702859082"
+      }
+    ],
+    "reviewReason": "matched on name and proximity, not on phone or address"
+  },
+  {
+    "slug": "etobicoke-smiles-dental",
+    "name": "Etobicoke Smiles Dental",
+    "citySlug": "unknown",
+    "address": "577 Burnhamthorpe Road",
+    "postalCode": "M9C 2Y3",
+    "phone": "4166212222",
+    "website": "https://etobicokesmilesdental.ca/",
+    "lat": 43.6444083,
+    "lng": -79.5688568,
+    "practitioners": [],
+    "permits": {
+      "sedation": false,
+      "cbct": false
+    },
+    "sources": [
+      {
+        "source": "osm",
+        "sourceId": "node/4030020004"
+      },
+      {
+        "source": "osm",
+        "sourceId": "node/9733756700"
+      }
+    ],
+    "reviewReason": "matched on name and proximity, not on phone or address"
+  },
+  {
+    "slug": "westboro-station-dental",
+    "name": "Westboro Station Dental",
+    "citySlug": "unknown",
+    "address": "599 Byron Avenue",
+    "lat": 45.3895687,
+    "lng": -75.7580366,
+    "practitioners": [],
+    "permits": {
+      "sedation": false,
+      "cbct": false
+    },
+    "sources": [
+      {
+        "source": "osm",
+        "sourceId": "node/5712134481"
+      },
+      {
+        "source": "osm",
+        "sourceId": "node/6281330153"
+      }
+    ],
+    "reviewReason": "matched on name and proximity, not on phone or address"
+  },
+  {
+    "slug": "picton-denture-clinic",
+    "name": "Picton Denture Clinic",
+    "citySlug": "unknown",
+    "address": "Picton Main Street",
+    "phone": "6134767070",
+    "lat": 44.0043859,
+    "lng": -77.1480353,
+    "practitioners": [],
+    "permits": {
+      "sedation": false,
+      "cbct": false
+    },
+    "sources": [
+      {
+        "source": "osm",
+        "sourceId": "node/5872315985"
+      },
+      {
+        "source": "osm",
+        "sourceId": "way/1066960870"
+      }
+    ],
+    "reviewReason": "matched on name and proximity, not on phone or address"
+  },
+  {
+    "slug": "village-square-dental-centre",
+    "name": "Village Square Dental Centre",
+    "citySlug": "unknown",
+    "address": "249 St Catharine Street",
+    "lat": 43.0955081,
+    "lng": -79.5390653,
+    "practitioners": [],
+    "permits": {
+      "sedation": false,
+      "cbct": false
+    },
+    "sources": [
+      {
+        "source": "osm",
+        "sourceId": "node/6227063036"
+      },
+      {
+        "source": "osm",
+        "sourceId": "node/12092272890"
+      }
+    ],
+    "reviewReason": "matched on name and proximity, not on phone or address"
+  },
+  {
+    "slug": "smiles-on-queen",
+    "name": "Smiles on Queen",
+    "citySlug": "bolton",
+    "address": "301 Queen Street South",
+    "postalCode": "L7E 2B1",
+    "phone": "9055332030",
+    "website": "https://smiledentistry.ca",
+    "lat": 43.873562,
+    "lng": -79.7276169,
+    "practitioners": [],
+    "permits": {
+      "sedation": false,
+      "cbct": false
+    },
+    "sources": [
+      {
+        "source": "osm",
+        "sourceId": "node/6429413660"
+      },
+      {
+        "source": "osm",
+        "sourceId": "node/13356550261"
+      }
+    ],
+    "reviewReason": "matched on name and proximity, not on phone or address"
+  },
+  {
+    "slug": "maple-dental",
+    "name": "Maple Dental",
+    "citySlug": "unknown",
+    "phone": "9058325570",
+    "website": "https://www.mapledental.com",
+    "lat": 43.8518674,
+    "lng": -79.5336953,
+    "practitioners": [],
+    "permits": {
+      "sedation": false,
+      "cbct": false
+    },
+    "sources": [
+      {
+        "source": "osm",
+        "sourceId": "node/7195257550"
+      },
+      {
+        "source": "osm",
+        "sourceId": "node/13814943116"
+      }
+    ],
+    "reviewReason": "matched on name and proximity, not on phone or address"
+  },
+  {
+    "slug": "estrabillo-dental-group",
+    "name": "Estrabillo Dental Group",
+    "citySlug": "unknown",
+    "address": "Wilson Street East",
+    "postalCode": "L9G 2B8",
+    "phone": "8883470177",
+    "website": "https://www.drestrabillo.com/",
+    "lat": 43.2229906,
+    "lng": -79.9798354,
+    "practitioners": [],
+    "permits": {
+      "sedation": false,
+      "cbct": false
+    },
+    "sources": [
+      {
+        "source": "osm",
+        "sourceId": "node/12919981701"
+      },
+      {
+        "source": "osm",
+        "sourceId": "node/12920058501"
+      }
+    ],
+    "reviewReason": "matched on name and proximity, not on phone or address"
+  },
+  {
+    "slug": "upper-james-dental",
+    "name": "Upper James Dental",
+    "citySlug": "unknown",
+    "lat": 43.2332258,
+    "lng": -79.8801418,
+    "practitioners": [],
+    "permits": {
+      "sedation": false,
+      "cbct": false
+    },
+    "sources": [
+      {
+        "source": "osm",
+        "sourceId": "node/13888685302"
+      },
+      {
+        "source": "osm",
+        "sourceId": "node/13888810201"
+      }
+    ],
+    "reviewReason": "matched on name and proximity, not on phone or address"
+  },
+  {
+    "slug": "dental-clinic-3",
+    "name": "Dental Clinic",
+    "citySlug": "unknown",
+    "lat": 43.7498288,
+    "lng": -79.549643,
+    "practitioners": [],
+    "permits": {
+      "sedation": false,
+      "cbct": false
+    },
+    "sources": [
+      {
+        "source": "osm",
+        "sourceId": "node/13924350022"
+      },
+      {
+        "source": "osm",
+        "sourceId": "node/13924350023"
+      }
+    ],
+    "reviewReason": "matched on name and proximity, not on phone or address"
+  }
+]
