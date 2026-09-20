@@ -153,6 +153,43 @@ function claimFor(record: MergedClinic): ClaimedListing | undefined {
   });
 }
 
+
+/**
+ * An owner's claim, field by field.
+ *
+ * Only the fields they actually supplied become facts; an absent field stays
+ * absent and the profile says so. Each one carries the owner as its source, so
+ * a reader can see that the clinic said it rather than a public record.
+ */
+function paymentFrom(claim: ClaimedListing): Clinic["payment"] {
+  const source = ownerProvenance(claim);
+  const payment: Clinic["payment"] = {};
+  if (claim.directBilling !== undefined) payment.directBilling = { value: claim.directBilling, provenance: source };
+  if (claim.insurers?.length) payment.insurers = { value: claim.insurers, provenance: source };
+  if (claim.cdcp !== undefined) payment.cdcp = { value: claim.cdcp, provenance: source };
+  if (claim.publishedFees?.length) payment.publishedFees = { value: claim.publishedFees, provenance: source };
+  return payment;
+}
+
+function availabilityFrom(claim: ClaimedListing): Clinic["availability"] {
+  const source = ownerProvenance(claim);
+  const availability: Clinic["availability"] = {};
+  if (claim.accepting !== undefined) availability.acceptingNewPatients = { value: claim.accepting, provenance: source };
+  if (claim.newPatientWaitDays !== undefined) availability.newPatientWaitDays = { value: claim.newPatientWaitDays, provenance: source };
+  if (claim.onlineBooking) availability.onlineBooking = { value: claim.onlineBooking, provenance: source };
+  if (claim.sameDayEmergency !== undefined) availability.sameDayEmergency = { value: claim.sameDayEmergency, provenance: source };
+  if (claim.walkInsAccepted !== undefined) availability.walkInsAccepted = { value: claim.walkInsAccepted, provenance: source };
+  return availability;
+}
+
+function accessibilityFrom(claim: ClaimedListing): Clinic["accessibility"] {
+  const source = ownerProvenance(claim);
+  const accessibility: Clinic["accessibility"] = {};
+  if (claim.wheelchairAccessible !== undefined) accessibility.wheelchairAccessible = { value: claim.wheelchairAccessible, provenance: source };
+  if (claim.parkingOnSite !== undefined) accessibility.parkingOnSite = { value: claim.parkingOnSite, provenance: source };
+  return accessibility;
+}
+
 function toClinic(record: MergedClinic): Clinic | undefined {
   if (!record.citySlug || !record.slug || !record.name) return undefined;
 
@@ -201,10 +238,9 @@ function toClinic(record: MergedClinic): Clinic | undefined {
         },
     procedures: [...evidence.entries()].map(([procedure, list]) => buildOffering(procedure, list)),
     practitioners,
-    accessibility:
-      claim?.wheelchairAccessible !== undefined
-        ? { wheelchairAccessible: { value: claim.wheelchairAccessible, provenance: ownerProvenance(claim) } }
-        : record.wheelchair === undefined
+    accessibility: claim
+      ? accessibilityFrom(claim)
+      : record.wheelchair === undefined
         ? {}
         : {
             wheelchairAccessible: {
@@ -212,12 +248,8 @@ function toClinic(record: MergedClinic): Clinic | undefined {
               provenance: { source: "osm", checkedAt: record.lastSeen ?? CHECKED },
             },
           },
-    payment: claim?.directBilling === undefined
-      ? {}
-      : { directBilling: { value: claim.directBilling, provenance: ownerProvenance(claim) } },
-    availability: claim?.accepting === undefined
-      ? {}
-      : { acceptingNewPatients: { value: claim.accepting, provenance: ownerProvenance(claim) } },
+    payment: claim ? paymentFrom(claim) : {},
+    availability: claim ? availabilityFrom(claim) : {},
     tier: claim ? "claimed" : "unclaimed",
     sources,
     lastUpdated: record.lastSeen ?? CHECKED,

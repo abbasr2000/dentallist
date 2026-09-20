@@ -44,7 +44,22 @@ export interface ClaimedListing {
   procedures?: Array<{ procedure: ProcedureKey; detail: string }>;
   accepting?: boolean;
   wheelchairAccessible?: boolean;
+  parkingOnSite?: boolean;
   directBilling?: boolean;
+  insurers?: string[];
+  /** Canadian Dental Care Plan. */
+  cdcp?: boolean;
+  onlineBooking?: string;
+  sameDayEmergency?: boolean;
+  walkInsAccepted?: boolean;
+  newPatientWaitDays?: number;
+  /**
+   * Fee ranges, which almost nobody publishes and every patient wants. Stating
+   * a range is a fact; "affordable" or "the best value in Scarborough" is the
+   * kind of comparative claim the RCDSO's advertising guidelines prohibit, and
+   * there is no field here to put one in.
+   */
+  publishedFees?: Array<{ procedure: ProcedureKey; from: number; to?: number }>;
 }
 
 export function ownerProvenance(listing: ClaimedListing): Provenance {
