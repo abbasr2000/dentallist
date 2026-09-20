@@ -36,6 +36,9 @@ const CITIES_URL = `${ORIGIN}/Predictive/Cities`;
  */
 const UA = "dentallist-ingest/1.0 (+https://github.com/abbasr2000/dentallist)";
 const POLITE_DELAY_MS = 1200;
+const OUT_PATH = "ingest/out/rcdso.json";
+/** Cities between saves. Twenty is about a minute's work to lose. */
+const CHECKPOINT_EVERY = 20;
 
 async function get(url: string): Promise<string> {
   const response = await fetch(url, {
@@ -397,30 +400,52 @@ async function main() {
       ? list.split(",").map((c) => c.trim()).filter(Boolean)
       : await registerCities(args.includes("--refresh-cities"));
 
-  console.log(`Walking ${cities.length} cities\n`);
+  // A full walk takes over an hour, which is long enough to be killed by a job
+  // timeout, a runner eviction or a network blip. Writing only at the end means
+  // any of those throws away the whole run, so progress is checkpointed and a
+  // restart picks up the cities it has not done. --restart forces a clean run.
+  const done = new Set<string>();
+  let all: SourceRecord[] = [];
+  if (!args.includes("--restart")) {
+    const previous = readJson<SourceRecord[]>(OUT_PATH);
+    if (previous?.length) {
+      all = previous;
+      for (const record of previous) if (record.city) done.add(record.city);
+      console.log(`Resuming: ${previous.length} rows already in ${OUT_PATH}, ${done.size} cities done`);
+    }
+  }
 
-  const all: SourceRecord[] = [];
+  const remaining = cities.filter((city) => !done.has(city));
+  console.log(`Walking ${remaining.length} of ${cities.length} cities\n`);
+
   let failures = 0;
-  for (const [index, city] of cities.entries()) {
+  let sinceCheckpoint = 0;
+  for (const [index, city] of remaining.entries()) {
     try {
       const records = await searchCity(city);
       all.push(...records);
       if (records.length > 0 || index % 25 === 0) {
-        console.log(`  ${String(index + 1).padStart(4)}/${cities.length}  ${city}: ${records.length}`);
+        console.log(`  ${String(index + 1).padStart(4)}/${remaining.length}  ${city}: ${records.length}`);
       }
     } catch (error) {
       failures++;
       console.log(`  ${city} failed: ${(error as Error).message}`);
     }
+
+    if (++sinceCheckpoint >= CHECKPOINT_EVERY) {
+      writeJson(OUT_PATH, all);
+      sinceCheckpoint = 0;
+    }
     await sleep(POLITE_DELAY_MS);
   }
 
+  writeJson(OUT_PATH, all);
   console.log(`\n${all.length} practice rows, ${failures} cities failed`);
 
   await applyRegisterEvidence(all);
 
-  writeJson("ingest/out/rcdso.json", all);
-  console.log(`Wrote ingest/out/rcdso.json`);
+  writeJson(OUT_PATH, all);
+  console.log(`Wrote ${OUT_PATH}`);
 }
 
 /**

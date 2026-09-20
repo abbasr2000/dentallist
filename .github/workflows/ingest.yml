@@ -75,12 +75,16 @@ jobs:
             npx tsx ingest/rcdso.ts --cities-list "$CITIES_INPUT"
           fi
 
+      # always(), because the register walk can run for over an hour and be cut
+      # short by a job timeout or a runner eviction. It checkpoints as it goes,
+      # so what it did get is worth merging, publishing and committing — and
+      # the next run resumes from that file rather than starting over.
       - name: Merge into clinics
-        if: ${{ inputs.sources != 'rcdso-probe' }}
+        if: ${{ always() && inputs.sources != 'rcdso-probe' }}
         run: npx tsx ingest/merge.ts
 
       - name: Summary
-        if: ${{ inputs.sources != 'rcdso-probe' }}
+        if: ${{ always() && inputs.sources != 'rcdso-probe' }}
         run: |
           {
             echo "## Ingest results"
@@ -92,13 +96,13 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-artifact@v4
-        if: ${{ inputs.sources != 'rcdso-probe' }}
+        if: ${{ always() && inputs.sources != 'rcdso-probe' }}
         with:
           name: ingest-output
           path: ingest/out/
 
       - name: Commit results
-        if: ${{ inputs.sources != 'rcdso-probe' }}
+        if: ${{ always() && inputs.sources != 'rcdso-probe' }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
