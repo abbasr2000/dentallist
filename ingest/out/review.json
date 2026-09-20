@@ -81,32 +81,6 @@
     "reviewReason": "matched on name and proximity, not on phone or address"
   },
   {
-    "slug": "westboro-station-dental",
-    "name": "Westboro Station Dental",
-    "citySlug": "ottawa",
-    "cityName": "Ottawa",
-    "cityDistanceKm": 5.93,
-    "address": "599 Byron Avenue",
-    "lat": 45.3895687,
-    "lng": -75.7580366,
-    "practitioners": [],
-    "permits": {
-      "sedation": false,
-      "cbct": false
-    },
-    "sources": [
-      {
-        "source": "osm",
-        "sourceId": "node/5712134481"
-      },
-      {
-        "source": "osm",
-        "sourceId": "node/6281330153"
-      }
-    ],
-    "reviewReason": "matched on name and proximity, not on phone or address"
-  },
-  {
     "slug": "picton-denture-clinic",
     "name": "Picton Denture Clinic",
     "citySlug": "unassigned",

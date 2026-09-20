@@ -18123,8 +18123,7 @@
         "source": "osm",
         "sourceId": "node/6281330153"
       }
-    ],
-    "reviewReason": "matched on name and proximity, not on phone or address"
+    ]
   },
   {
     "slug": "clinton-dental",

@@ -255,6 +255,46 @@ check("permits and practitioners carry across sources", () => {
   assert.equal(merged[0].lat, 43.7);
 });
 
+check("a register record meets its map record on the address alone", () => {
+  // Register records carry no coordinates and often no postal code, so the
+  // street address and city is the only thing the two sources share. The suite
+  // number is on one side only, which is exactly the case that must still work.
+  const merged = mergeRecords([
+    rec({ source: "rcdso", sourceId: "a", name: "Bay Dental Centre",
+          address: "2855 Markham Rd #108", city: "Scarborough" }),
+    rec({ source: "osm", sourceId: "node/9", name: "Bay Dental",
+          address: "2855 Markham Road", lat: 43.77, lng: -79.23,
+          website: "https://example.invalid" }),
+  ]);
+  assert.equal(merged.length, 1, `got ${merged.length} clinics`);
+  assert.equal(merged[0].website, "https://example.invalid");
+  assert.equal(merged[0].name, "Bay Dental Centre", "the registered name should win");
+});
+
+check("one building holding several practices stays several practices", () => {
+  // 1580 Merivale Road in Nepean really does hold five, and 10 Green Street in
+  // Barrhaven four. Merging on address alone would delete real clinics.
+  const merged = mergeRecords([
+    rec({ source: "osm", sourceId: "1", name: "Lima Denture", address: "1580 Merivale Road",
+          city: "Nepean", lat: 45.3411, lng: -75.7261 }),
+    rec({ source: "osm", sourceId: "2", name: "Cityview Family Dental Centre", address: "1580 Merivale Rd",
+          city: "Nepean", lat: 45.3411, lng: -75.7261 }),
+    rec({ source: "osm", sourceId: "3", name: "Allegra Dental", address: "1580 Merivale Road Suite 200",
+          city: "Nepean", lat: 45.3411, lng: -75.7261 }),
+    rec({ source: "osm", sourceId: "4", name: "The Teal Umbrella", address: "1580 Merivale Road",
+          city: "Nepean", lat: 45.3411, lng: -75.7261 }),
+  ]);
+  assert.equal(merged.length, 4, `got ${merged.length} clinics, should be 4`);
+});
+
+check("a street with no number never merges", () => {
+  const merged = mergeRecords([
+    rec({ source: "rcdso", sourceId: "a", name: "A Dental", address: "Lawrence Ave E", city: "Scarborough" }),
+    rec({ source: "rcdso", sourceId: "b", name: "B Dental", address: "Lawrence Avenue East", city: "Scarborough" }),
+  ]);
+  assert.equal(merged.length, 2);
+});
+
 console.log("\nCity assignment from coordinates");
 check("a downtown Toronto clinic lands in Toronto, not a borough", () => {
   const placed = assignPlace(43.6532, -79.3832);
