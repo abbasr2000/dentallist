@@ -124,25 +124,106 @@ export function parseResultRow(row: RawRow): SourceRecord | undefined {
 }
 
 async function inspectForm(page: Page): Promise<void> {
+  // The register may well be API-driven. A JSON endpoint is far better than
+  // scraping markup, so watch the network before touching the DOM.
+  const apiCalls: { url: string; status: number; sample: string }[] = [];
+  page.on("response", async (response) => {
+    const url = response.url();
+    const type = response.headers()["content-type"] ?? "";
+    if (!type.includes("json")) return;
+    if (/analytics|telemetry|consent|gtm|gtag|sentry/i.test(url)) return;
+    try {
+      const body = await response.text();
+      apiCalls.push({ url, status: response.status(), sample: body.slice(0, 600) });
+    } catch {
+      /* body already consumed or the request was aborted */
+    }
+  });
+
   await page.goto(REGISTER_URL, { waitUntil: "domcontentloaded" });
-  const report = await page.evaluate(() => {
-    const fields = [...document.querySelectorAll("input, select, textarea")].map((el) => ({
+  await page.waitForLoadState("networkidle").catch(() => {});
+
+  const consent = page.locator(SELECTORS.consentButton).first();
+  if (await consent.isVisible().catch(() => false)) {
+    await consent.click();
+    await page.waitForTimeout(1000);
+  }
+
+  const form = await page.evaluate(() => ({
+    title: document.title,
+    forms: [...document.querySelectorAll("form")].map((f) => ({
+      action: f.getAttribute("action"),
+      method: f.getAttribute("method"),
+      id: f.id,
+    })),
+    fields: [...document.querySelectorAll("input, select, textarea, button")].map((el) => ({
       tag: el.tagName.toLowerCase(),
       type: (el as HTMLInputElement).type,
       name: (el as HTMLInputElement).name,
       id: el.id,
       placeholder: (el as HTMLInputElement).placeholder,
-    }));
-    const forms = [...document.querySelectorAll("form")].map((f) => ({
-      action: f.getAttribute("action"),
-      method: f.getAttribute("method"),
-    }));
-    return { forms, fields };
+      label: (el.textContent ?? "").trim().slice(0, 60) || undefined,
+    })),
+    iframes: [...document.querySelectorAll("iframe")].map((f) => f.src),
+  }));
+  console.log("=== FORM ===");
+  console.log(JSON.stringify(form, null, 2));
+
+  // Try the search we would actually run, so the result markup is visible.
+  console.log("\n=== SEARCH: Scarborough ===");
+  try {
+    const input = page.locator(SELECTORS.cityInput).first();
+    await input.waitFor({ state: "visible", timeout: 15_000 });
+    await input.fill("Scarborough");
+    await page.locator(SELECTORS.submitButton).first().click();
+    await page.waitForLoadState("networkidle").catch(() => {});
+    await page.waitForTimeout(3000);
+    console.log(`landed on ${page.url()}`);
+  } catch (error) {
+    console.log(`could not drive the form: ${(error as Error).message}`);
+    console.log("The FORM dump above is what there is to go on.");
+  }
+
+  // Whatever repeats on the page is very likely the result row.
+  const repeated = await page.evaluate(() => {
+    const counts = new Map<string, number>();
+    for (const el of document.querySelectorAll("body *")) {
+      const cls = [...el.classList].slice(0, 3).join(".");
+      if (!cls) continue;
+      const key = `${el.tagName.toLowerCase()}.${cls}`;
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    return [...counts.entries()]
+      .filter(([, n]) => n >= 3 && n <= 200)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 30);
   });
-  console.log(JSON.stringify(report, null, 2));
-  console.log(
-    "\nUpdate SELECTORS in ingest/rcdso.ts to match, then run without --inspect-form.",
+  console.log("\n=== REPEATED ELEMENTS (candidate result rows) ===");
+  for (const [selector, count] of repeated) console.log(`  ${count}x  ${selector}`);
+
+  const pager = await page.evaluate(() =>
+    [...document.querySelectorAll("a, button")]
+      .filter((el) => /next|page|›|»/i.test(`${el.textContent} ${el.getAttribute("aria-label") ?? ""}`))
+      .slice(0, 15)
+      .map((el) => ({
+        tag: el.tagName.toLowerCase(),
+        text: (el.textContent ?? "").trim().slice(0, 30),
+        aria: el.getAttribute("aria-label"),
+        cls: el.className?.toString().slice(0, 60),
+        href: el.getAttribute("href"),
+      })),
   );
+  console.log("\n=== PAGINATION CANDIDATES ===");
+  console.log(JSON.stringify(pager, null, 2));
+
+  console.log("\n=== JSON RESPONSES SEEN ===");
+  for (const call of apiCalls.slice(-25)) {
+    console.log(`\n${call.status}  ${call.url}`);
+    console.log(`  ${call.sample.replace(/\n/g, " ").slice(0, 400)}`);
+  }
+  if (apiCalls.length === 0) console.log("  none — the register renders server-side, so scrape the markup.");
+
+  console.log("\nUpdate SELECTORS in ingest/rcdso.ts to match, then run without --inspect-form.");
 }
 
 async function searchCity(page: Page, city: string): Promise<SourceRecord[]> {

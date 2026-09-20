@@ -17,6 +17,7 @@ on:
           - osm
           - osm+rcdso
           - rcdso
+          - rcdso-inspect
       rcdso_cities:
         description: "RCDSO: comma-separated cities (blank = the default list)"
         type: string
@@ -48,15 +49,22 @@ jobs:
         run: npx tsx ingest/verify.ts
 
       - name: OpenStreetMap
-        if: ${{ inputs.sources != 'rcdso' }}
+        if: ${{ inputs.sources == 'osm' || inputs.sources == 'osm+rcdso' || inputs.sources == '' }}
         run: npx tsx ingest/osm.ts
 
       - name: Install browser for the register
         if: ${{ contains(inputs.sources, 'rcdso') }}
         run: npx playwright install --with-deps chromium
 
+      # The register's markup is the one thing we cannot verify from here, since
+      # rcdso.org is unreachable from the dev sandbox. This prints the form,
+      # the repeated elements and any JSON endpoint to the job log.
+      - name: Inspect the register's search form
+        if: ${{ inputs.sources == 'rcdso-inspect' }}
+        run: npx tsx ingest/rcdso.ts --inspect-form
+
       - name: RCDSO public register
-        if: ${{ contains(inputs.sources, 'rcdso') }}
+        if: ${{ inputs.sources == 'rcdso' || inputs.sources == 'osm+rcdso' }}
         run: |
           if [ -n "${{ inputs.rcdso_cities }}" ]; then
             IFS=',' read -ra CITIES <<< "${{ inputs.rcdso_cities }}"
@@ -68,9 +76,11 @@ jobs:
           fi
 
       - name: Merge into clinics
+        if: ${{ inputs.sources != 'rcdso-inspect' }}
         run: npx tsx ingest/merge.ts
 
       - name: Summary
+        if: ${{ inputs.sources != 'rcdso-inspect' }}
         run: |
           {
             echo "## Ingest results"
@@ -82,11 +92,13 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-artifact@v4
+        if: ${{ inputs.sources != 'rcdso-inspect' }}
         with:
           name: ingest-output
           path: ingest/out/
 
       - name: Commit results
+        if: ${{ inputs.sources != 'rcdso-inspect' }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
