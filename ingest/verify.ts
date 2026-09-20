@@ -16,7 +16,7 @@ import { PROCEDURES, proceduresForSpecialty } from "../lib/procedures";
 import { resolveSiteUrl } from "../lib/site";
 import { osmStreetName, streetFrom } from "./streetname";
 import { clusterPoints, streetNamesFrom } from "./streets";
-import { locate, placeIndex, tally } from "./locate";
+import { buildExchangeAnchors, exchangeOf, locate, medoid, placeIndex, tally } from "./locate";
 import type { SourceRecord } from "./lib";
 
 let passed = 0;
@@ -592,50 +592,118 @@ const STREETS = {
     { lat: 43.2557, lng: -79.8700, ways: 90 },
     { lat: 45.4200, lng: -75.6900, ways: 40 },
   ],
-  "Edward Street": [{ lat: 43.6560, lng: -79.3870, ways: 12 }],
+  "Britannia Road": [
+    { lat: 43.5900, lng: -79.6900, ways: 20 }, // Mississauga end
+    { lat: 43.5200, lng: -79.8800, ways: 18 }, // Milton end
+  ],
 };
 
-check("one street of that name settles it, whatever the dentists say", () => {
-  // The real case: dentists registered in six places, the practice on Carling.
-  const found = locate(
-    "Unit-4 1295 Carling Ave",
-    ["Bradford", "Ottawa", "Bradford", "Kanata", "Orangeville", "Stittsville"],
-    STREETS,
-    GAZETTEER,
-  );
-  assert.ok(found, "should have placed it");
-  assert.ok(Math.abs(found.lat - 45.3833) < 0.01, `landed at ${found.lat}`);
-  assert.equal(found.basis, "street-and-city");
+const NO_ANCHORS = new Map<string, { lat: number; lng: number }>();
+
+check("the exchange is the area code and the next three, however written", () => {
+  assert.equal(exchangeOf("905-725-5088"), "905725");
+  assert.equal(exchangeOf("1 (905) 725 5088"), "905725");
+  assert.equal(exchangeOf("9057255088"), "905725");
+  assert.equal(exchangeOf("905-725"), "905725");
+  assert.equal(exchangeOf("12345"), undefined);
+  assert.equal(exchangeOf(undefined), undefined);
 });
 
-check("a repeated street name is settled by where the dentists are", () => {
-  const hamilton = locate("100 Main St", ["Hamilton", "Hamilton"], STREETS, GAZETTEER);
-  assert.ok(hamilton && Math.abs(hamilton.lat - 43.2557) < 0.05, "should be the Hamilton one");
+check("an exchange is placed at a clinic, not between two clusters", () => {
+  // A mean of these lands in the lake between them. A medoid is always
+  // somewhere a clinic actually is.
+  const centre = medoid([
+    { lat: 43.65, lng: -79.38 },
+    { lat: 43.66, lng: -79.39 },
+    { lat: 43.67, lng: -79.40 },
+  ]);
+  assert.ok(centre, "should have a centre");
+  assert.ok(
+    [43.65, 43.66, 43.67].some((lat) => Math.abs(centre.lat - lat) < 1e-9),
+    `centre ${centre.lat} was not one of the points`,
+  );
+});
 
-  const ottawa = locate("100 Main St", ["Ottawa", "Kanata"], STREETS, GAZETTEER);
-  assert.ok(ottawa && Math.abs(ottawa.lat - 45.42) < 0.05, "should be the Ottawa one");
+check("an exchange scattered across the province is discarded, not averaged", () => {
+  const anchors = buildExchangeAnchors([
+    { phone: "416-555-0001", lat: 43.65, lng: -79.38 },
+    { phone: "416-555-0002", lat: 45.42, lng: -75.69 },
+    { phone: "416-555-0003", lat: 42.30, lng: -83.03 },
+  ]);
+  assert.equal(anchors.size, 0, "a 500 km spread describes no place");
+});
+
+check("a tight exchange is kept", () => {
+  const anchors = buildExchangeAnchors([
+    { phone: "613-595-0001", lat: 45.30, lng: -75.90 },
+    { phone: "613-595-0002", lat: 45.31, lng: -75.91 },
+  ]);
+  assert.equal(anchors.size, 1);
+  assert.ok(anchors.get("613595"));
+});
+
+check("the exchange picks the stretch, and the dentists are not consulted", () => {
+  // Britannia Road runs from Mississauga into Milton. The register practice
+  // sits at the Mississauga end; its dentists registered all over.
+  const anchors = buildExchangeAnchors([
+    { phone: "905-890-0001", lat: 43.5895, lng: -79.6905 },
+    { phone: "905-890-0002", lat: 43.5905, lng: -79.6895 },
+  ]);
+  const found = locate(
+    "812 Britannia Rd #108",
+    "905-890-5555",
+    ["Orangeville", "Orangeville", "Bradford"],
+    STREETS,
+    GAZETTEER,
+    anchors,
+  );
+  assert.equal(found?.basis, "street-and-exchange");
+  assert.ok(Math.abs(found!.lat - 43.59) < 0.01, `landed at ${found!.lat}`);
+  assert.ok(found!.confident, "street and exchange agreeing is confident");
+});
+
+check("an exchange nowhere near the street stands alone", () => {
+  const anchors = buildExchangeAnchors([
+    { phone: "613-595-0001", lat: 45.30, lng: -75.90 },
+    { phone: "613-595-0002", lat: 45.31, lng: -75.91 },
+  ]);
+  const found = locate("100 Main St", "613-595-1234", ["Hamilton"], STREETS, GAZETTEER, anchors);
+  // Ottawa's Main Street is in the index and is within reach of the anchor.
+  assert.equal(found?.basis, "street-and-exchange");
+  assert.ok(found!.lat > 45, "should be the Ottawa one, not Hamilton's");
+});
+
+check("with no exchange, the dentists' cities choose the stretch", () => {
+  const hamilton = locate("100 Main St", undefined, ["Hamilton", "Hamilton"], STREETS, GAZETTEER, NO_ANCHORS);
+  assert.equal(hamilton?.basis, "street-and-city");
+  assert.ok(Math.abs(hamilton!.lat - 43.2557) < 0.05, "should be the Hamilton one");
+
+  const ottawa = locate("100 Main St", undefined, ["Ottawa", "Kanata"], STREETS, GAZETTEER, NO_ANCHORS);
+  assert.ok(Math.abs(ottawa!.lat - 45.42) < 0.05, "should be the Ottawa one");
 });
 
 check("several nearby cities outweigh one distant city with more dentists", () => {
-  // Three Ottawa-area registrations against four in Bradford, 350 km away.
   const found = locate(
     "1295 Carling Ave",
+    undefined,
     ["Bradford", "Bradford", "Bradford", "Bradford", "Ottawa", "Kanata", "Stittsville"],
     STREETS,
     GAZETTEER,
+    NO_ANCHORS,
   );
   assert.ok(found && Math.abs(found.lat - 45.3833) < 0.05, "should still be Ottawa's Carling");
 });
 
-check("no street and no known city places nothing at all", () => {
+check("no street, no exchange and no known city places nothing at all", () => {
   // An unplaced clinic is honest. One on the wrong city page is not.
-  assert.equal(locate("#205", ["Nowhereville"], STREETS, GAZETTEER), undefined);
-  assert.equal(locate(undefined, [], STREETS, GAZETTEER), undefined);
+  assert.equal(locate("#205", undefined, ["Nowhereville"], STREETS, GAZETTEER, NO_ANCHORS), undefined);
+  assert.equal(locate(undefined, undefined, [], STREETS, GAZETTEER, NO_ANCHORS), undefined);
 });
 
-check("no usable street falls back to the city, and says so", () => {
-  const found = locate("#205", ["Hamilton"], STREETS, GAZETTEER);
+check("a city-only placement is never marked confident", () => {
+  const found = locate("#205", undefined, ["Hamilton"], STREETS, GAZETTEER, NO_ANCHORS);
   assert.equal(found?.basis, "city-only");
+  assert.equal(found?.confident, false);
 });
 
 check("votes are counted, not just collected", () => {

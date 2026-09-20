@@ -36,6 +36,15 @@ export interface ClaimedListing {
   confirmedOn: string;
 
   name?: string;
+  /**
+   * Where the clinic is, when the owner's answer differs from what the
+   * pipeline worked out. An owner stating their own city is the best evidence
+   * there is, and it outranks every inference in ingest/locate.ts — which gets
+   * the city right 85% of the time and will keep getting some wrong, because
+   * the register prints no city and a dentist registered in "Toronto" may work
+   * anywhere in it.
+   */
+  city?: { slug: string; name: string; municipality?: string };
   website?: string;
   email?: string;
   hours?: OpeningHours[];
@@ -93,6 +102,11 @@ export const CLAIMED: ClaimedListing[] = [
     confirmedBy: "the practice owner",
     confirmedOn: "2026-09-20",
     name: "Cedarbrae Dental Center",
+    // The pipeline put this one in Agincourt. Lawrence Avenue East runs 20 km
+    // across the east end, and its dentists registered as "Toronto" eight
+    // times against "Scarborough" twice, so the street-and-city rule chose a
+    // stretch 3.6 km too far west. 3630 Lawrence Avenue East is Scarborough.
+    city: { slug: "scarborough", name: "Scarborough", municipality: "Toronto" },
     website: "https://cedarbrae.dental",
   },
   {

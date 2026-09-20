@@ -221,7 +221,8 @@ function toClinic(record: MergedClinic): Clinic | undefined {
     slug: record.slug,
     // An owner's own spelling of their practice name beats a mapper's.
     name: claim?.name ?? record.name,
-    citySlug: record.citySlug,
+    // The owner's own answer about where they are beats the pipeline's.
+    citySlug: claim?.city?.slug ?? record.citySlug,
     address: record.address,
     postalCode: record.postalCode,
     lat: record.lat,
@@ -277,6 +278,16 @@ export const INGESTED_CITIES: City[] = (() => {
       clinics: [],
     };
     grouped.set(record.citySlug, entry);
+  }
+  // A claim can move a clinic to a city no ingested record put it in, and a
+  // clinic whose city page does not exist is a clinic nobody can reach.
+  for (const listing of CLAIMED) {
+    if (!listing.city || grouped.has(listing.city.slug)) continue;
+    grouped.set(listing.city.slug, {
+      name: listing.city.name,
+      municipality: listing.city.municipality,
+      clinics: [],
+    });
   }
   for (const clinic of INGESTED_CLINICS) {
     grouped.get(clinic.citySlug)?.clinics.push(clinic);

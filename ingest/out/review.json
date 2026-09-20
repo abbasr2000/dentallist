@@ -559,17 +559,12 @@
     "citySlug": "london",
     "cityName": "London",
     "cityDistanceKm": 0.38,
-    "phone": "5196575111",
     "lat": 42.9836747,
     "lng": -81.2496068,
     "practitioners": [
       {
         "fullName": "Anand Soni",
         "registrationNumber": "53864"
-      },
-      {
-        "fullName": "Jamie Liu",
-        "registrationNumber": "62694"
       }
     ],
     "permits": {
@@ -583,15 +578,7 @@
       },
       {
         "source": "rcdso",
-        "sourceId": "705-wonderland-rd-n-b2-2-5196575111"
-      },
-      {
-        "source": "rcdso",
         "sourceId": "705-wonderland-rd-n-b2-2"
-      },
-      {
-        "source": "rcdso",
-        "sourceId": "705-wonderland-rd-n-b2-2-5196575111"
       },
       {
         "source": "rcdso",
@@ -932,6 +919,10 @@
         "registrationNumber": "100460"
       },
       {
+        "fullName": "Alireza Golabchifar",
+        "registrationNumber": "91244"
+      },
+      {
         "fullName": "Elena Voorand",
         "registrationNumber": "505512"
       },
@@ -959,7 +950,7 @@
       },
       {
         "source": "rcdso",
-        "sourceId": "empress-dentistry-5095-yonge-st-b4-4162241404"
+        "sourceId": "empress-walk-dental-5095-yonge-st-a1-4162508000"
       },
       {
         "source": "rcdso",
@@ -987,7 +978,7 @@
       },
       {
         "source": "rcdso",
-        "sourceId": "empress-dentistry-5095-yonge-st-b4-4162241404"
+        "sourceId": "empress-walk-dental-5095-yonge-st-a1-4162508000"
       },
       {
         "source": "rcdso",
@@ -1004,6 +995,18 @@
       {
         "source": "rcdso",
         "sourceId": "empress-dentistry-5095-yonge-st-b4-4162241404"
+      },
+      {
+        "source": "rcdso",
+        "sourceId": "empress-dentistry-5095-yonge-st-b4-4162241404"
+      },
+      {
+        "source": "rcdso",
+        "sourceId": "empress-dentistry-5095-yonge-st-b4-4162241404"
+      },
+      {
+        "source": "rcdso",
+        "sourceId": "empress-walk-dental-5095-yonge-st-a1-4162508000"
       },
       {
         "source": "rcdso",
@@ -1016,6 +1019,10 @@
       {
         "source": "osm",
         "sourceId": "node/560651658"
+      },
+      {
+        "source": "osm",
+        "sourceId": "node/6680642271"
       }
     ],
     "reviewReason": "matched on name and proximity, not on phone or address"
@@ -1584,11 +1591,11 @@
     "name": "Dental Health Group",
     "citySlug": "burlington",
     "cityName": "Burlington",
-    "cityDistanceKm": 0.2,
+    "cityDistanceKm": 4.94,
     "address": "2951 Walkers Line 3rd Fl Halton Family Health Centre",
     "phone": "9053369646",
-    "lat": 43.3248924,
-    "lng": -79.7966835,
+    "lat": 43.3568309,
+    "lng": -79.84231,
     "practitioners": [
       {
         "fullName": "Amanda Larsh",
@@ -2349,10 +2356,10 @@
     "name": "1158 Aerowood Dr",
     "citySlug": "mississauga",
     "cityName": "Mississauga",
-    "cityDistanceKm": 3.23,
+    "cityDistanceKm": 5.44,
     "phone": "9052383579",
-    "lat": 43.6080252,
-    "lng": -79.6744369,
+    "lat": 43.63293,
+    "lng": -79.61435,
     "practitioners": [
       {
         "fullName": "Hamida Okera",
@@ -2576,12 +2583,12 @@
   {
     "slug": "2183-davebrook-rd",
     "name": "2183 Davebrook Rd",
-    "citySlug": "mississauga",
-    "cityName": "Mississauga",
-    "cityDistanceKm": 3.23,
+    "citySlug": "oakville",
+    "cityName": "Oakville",
+    "cityDistanceKm": 6.95,
     "phone": "9058229801",
-    "lat": 43.6080252,
-    "lng": -79.6744369,
+    "lat": 43.519232,
+    "lng": -79.6392804,
     "practitioners": [
       {
         "fullName": "Luc Ouellette",
@@ -2847,18 +2854,12 @@
     "citySlug": "mississauga",
     "cityName": "Mississauga",
     "cityDistanceKm": 3.23,
-    "address": "800 Boyer Boulevard",
-    "phone": "9058120880",
     "lat": 43.6080252,
     "lng": -79.6744369,
     "practitioners": [
       {
         "fullName": "Monica Gaerlan",
         "registrationNumber": "108566"
-      },
-      {
-        "fullName": "Tyler Ricer",
-        "registrationNumber": "116950"
       }
     ],
     "permits": {
@@ -2872,19 +2873,7 @@
       },
       {
         "source": "rcdso",
-        "sourceId": "800-boyer-blvd-4-9058120880"
-      },
-      {
-        "source": "rcdso",
         "sourceId": "800-boyer-blvd-4"
-      },
-      {
-        "source": "rcdso",
-        "sourceId": "800-boyer-blvd-4-9058120880"
-      },
-      {
-        "source": "osm",
-        "sourceId": "node/12975313647"
       }
     ],
     "reviewReason": "matched on name and proximity, not on phone or address"
@@ -2964,6 +2953,82 @@
       {
         "source": "rcdso",
         "sourceId": "8-queens-quay-w-family-dental-108-8-queens-quay-w"
+      }
+    ],
+    "reviewReason": "matched on name and proximity, not on phone or address"
+  },
+  {
+    "slug": "bramalea-7-family-dental-centre",
+    "name": "Bramalea 7 Family Dental Centre",
+    "citySlug": "brampton",
+    "cityName": "Brampton",
+    "cityDistanceKm": 3.72,
+    "address": "490 Bramalea Rd #102",
+    "phone": "9052305678",
+    "lat": 43.72432,
+    "lng": -79.71722,
+    "practitioners": [
+      {
+        "fullName": "Neha Sharma",
+        "registrationNumber": "504936"
+      },
+      {
+        "fullName": "Farid Bargrizfarshi",
+        "registrationNumber": "99948"
+      },
+      {
+        "fullName": "Kamalpreet Sandhu",
+        "registrationNumber": "110485"
+      },
+      {
+        "fullName": "Ravneet Brar",
+        "registrationNumber": "68325"
+      }
+    ],
+    "permits": {
+      "sedation": false,
+      "cbct": false
+    },
+    "sources": [
+      {
+        "source": "rcdso",
+        "sourceId": "bramalea-7-family-dental-centre-490-bramalea-rd-102-9052305678"
+      },
+      {
+        "source": "rcdso",
+        "sourceId": "bramalea-7-family-dental-centre-490-bramalea-rd-102-9052305678"
+      },
+      {
+        "source": "rcdso",
+        "sourceId": "bramalea-7-family-dental-centre-490-bramalea-rd-102-9052305678"
+      },
+      {
+        "source": "rcdso",
+        "sourceId": "bramalea-7-family-dental-centre-490-bramalea-rd-102-9052305678"
+      },
+      {
+        "source": "rcdso",
+        "sourceId": "bramalea-7-family-dental-centre-490-bramalea-rd-102-9052305678"
+      },
+      {
+        "source": "rcdso",
+        "sourceId": "bramalea-7-family-dental-centre-490-bramalea-rd-102-9052305678"
+      },
+      {
+        "source": "rcdso",
+        "sourceId": "bramalea-7-family-dental-centre-490-bramalea-rd-102-9052305678"
+      },
+      {
+        "source": "rcdso",
+        "sourceId": "bramalea-7-family-dental-centre-490-bramalea-rd-102-9052305678"
+      },
+      {
+        "source": "rcdso",
+        "sourceId": "bramalea-7-family-dental-centre-490-bramalea-rd-102-9052305678"
+      },
+      {
+        "source": "osm",
+        "sourceId": "node/6547874073"
       }
     ],
     "reviewReason": "matched on name and proximity, not on phone or address"
@@ -3884,42 +3949,6 @@
       {
         "source": "rcdso",
         "sourceId": "2525-old-bronte-road"
-      }
-    ],
-    "reviewReason": "matched on name and proximity, not on phone or address"
-  },
-  {
-    "slug": "olde-oakville-dental",
-    "name": "Olde Oakville Dental",
-    "citySlug": "oakville",
-    "cityName": "Oakville",
-    "cityDistanceKm": 1.34,
-    "address": "361 Cornwall Rd #105",
-    "phone": "9058291666",
-    "lat": 43.45785,
-    "lng": -79.67769,
-    "practitioners": [
-      {
-        "fullName": "Joel De Souza",
-        "registrationNumber": "10374"
-      }
-    ],
-    "permits": {
-      "sedation": false,
-      "cbct": false
-    },
-    "sources": [
-      {
-        "source": "rcdso",
-        "sourceId": "olde-oakville-dental-361-cornwall-rd-105-9058291666"
-      },
-      {
-        "source": "rcdso",
-        "sourceId": "olde-oakville-dental-361-cornwall-rd-105-9058291666"
-      },
-      {
-        "source": "osm",
-        "sourceId": "node/2497601299"
       }
     ],
     "reviewReason": "matched on name and proximity, not on phone or address"
@@ -5059,6 +5088,63 @@
     "reviewReason": "matched on name and proximity, not on phone or address"
   },
   {
+    "slug": "crystal-dental-centre",
+    "name": "Crystal Dental Centre",
+    "citySlug": "agincourt",
+    "cityName": "Agincourt",
+    "municipality": "Toronto",
+    "cityDistanceKm": 3.37,
+    "address": "2900 Warden Ave #261",
+    "phone": "4164988988",
+    "lat": 43.79844,
+    "lng": -79.31685,
+    "practitioners": [
+      {
+        "fullName": "Gloria Chang",
+        "registrationNumber": "505125"
+      },
+      {
+        "fullName": "Jasmine Kaur",
+        "registrationNumber": "507073"
+      }
+    ],
+    "permits": {
+      "sedation": false,
+      "cbct": false
+    },
+    "sources": [
+      {
+        "source": "rcdso",
+        "sourceId": "crystal-dental-centre-2900-warden-ave-261-4164988988"
+      },
+      {
+        "source": "rcdso",
+        "sourceId": "crystal-dental-centre-2900-warden-ave-261-4164988988"
+      },
+      {
+        "source": "rcdso",
+        "sourceId": "crystal-dental-centre-2900-warden-ave-261-4164988988"
+      },
+      {
+        "source": "rcdso",
+        "sourceId": "crystal-dental-centre-2900-warden-ave-261-4164988988"
+      },
+      {
+        "source": "rcdso",
+        "sourceId": "crystal-dental-centre-2900-warden-ave-261-4164988988"
+      },
+      {
+        "source": "rcdso",
+        "sourceId": "crystal-dental-centre-2900-warden-ave-261-4164988988"
+      },
+      {
+        "source": "osm",
+        "sourceId": "node/6584471083"
+      }
+    ],
+    "reviewReason": "matched on name and proximity, not on phone or address"
+  },
+  {
     "slug": "dentix24-dental-clinic",
     "name": "Dentix24 Dental Clinic",
     "citySlug": "toronto",
@@ -5158,69 +5244,6 @@
     "reviewReason": "matched on name and proximity, not on phone or address"
   },
   {
-    "slug": "250-harding-blvd-w-203",
-    "name": "250 Harding Blvd W #203",
-    "citySlug": "richmond-hill",
-    "cityName": "Richmond Hill",
-    "cityDistanceKm": 0.31,
-    "phone": "9055088828",
-    "lat": 43.8801166,
-    "lng": -79.4392925,
-    "practitioners": [
-      {
-        "fullName": "Hyejin Lee",
-        "registrationNumber": "88668"
-      },
-      {
-        "fullName": "Rosenda Nodalo",
-        "registrationNumber": "95640"
-      }
-    ],
-    "permits": {
-      "sedation": false,
-      "cbct": false
-    },
-    "sources": [
-      {
-        "source": "rcdso",
-        "sourceId": "250-harding-blvd-w-203-9055088828"
-      },
-      {
-        "source": "rcdso",
-        "sourceId": "250-harding-blvd-w-203-9057377300"
-      },
-      {
-        "source": "rcdso",
-        "sourceId": "250-harding-blvd-w-203-9057377300"
-      },
-      {
-        "source": "rcdso",
-        "sourceId": "250-harding-blvd-w-203-9055088828"
-      },
-      {
-        "source": "rcdso",
-        "sourceId": "250-harding-blvd-w-203-9057377300"
-      },
-      {
-        "source": "rcdso",
-        "sourceId": "250-harding-blvd-w-203-9055088828"
-      },
-      {
-        "source": "rcdso",
-        "sourceId": "250-harding-blvd-w-203-9057377300"
-      },
-      {
-        "source": "rcdso",
-        "sourceId": "250-harding-blvd-w-203-9057377300"
-      },
-      {
-        "source": "rcdso",
-        "sourceId": "250-harding-blvd-w-203-9057377300"
-      }
-    ],
-    "reviewReason": "matched on name and proximity, not on phone or address"
-  },
-  {
     "slug": "joysmile-family-dental",
     "name": "JoySmile Family Dental",
     "citySlug": "richmond-hill",
@@ -5264,19 +5287,14 @@
     "reviewReason": "matched on name and proximity, not on phone or address"
   },
   {
-    "slug": "250-harding-blvd-w-210",
+    "slug": "250-harding-blvd-w-210-2",
     "name": "250 Harding Blvd W #210",
     "citySlug": "richmond-hill",
     "cityName": "Richmond Hill",
     "cityDistanceKm": 0.31,
-    "phone": "9052375680",
     "lat": 43.8801166,
     "lng": -79.4392925,
     "practitioners": [
-      {
-        "fullName": "Li Shi",
-        "registrationNumber": "116955"
-      },
       {
         "fullName": "Longmei Xu",
         "registrationNumber": "38889"
@@ -5289,7 +5307,7 @@
     "sources": [
       {
         "source": "rcdso",
-        "sourceId": "250-harding-blvd-w-210-9052375680"
+        "sourceId": "250-harding-blvd-w-210"
       },
       {
         "source": "rcdso",
@@ -5297,35 +5315,11 @@
       },
       {
         "source": "rcdso",
-        "sourceId": "250-harding-blvd-w-210-9052375680"
-      },
-      {
-        "source": "rcdso",
-        "sourceId": "250-harding-blvd-w-210-9052375680"
-      },
-      {
-        "source": "rcdso",
         "sourceId": "250-harding-blvd-w-210"
       },
       {
         "source": "rcdso",
-        "sourceId": "250-harding-blvd-w-210-9052375680"
-      },
-      {
-        "source": "rcdso",
         "sourceId": "250-harding-blvd-w-210"
-      },
-      {
-        "source": "rcdso",
-        "sourceId": "250-harding-blvd-w-210-9052375680"
-      },
-      {
-        "source": "rcdso",
-        "sourceId": "250-harding-blvd-w-210"
-      },
-      {
-        "source": "rcdso",
-        "sourceId": "250-harding-blvd-w-210-9052375680"
       }
     ],
     "reviewReason": "matched on name and proximity, not on phone or address"
@@ -6374,49 +6368,6 @@
     "reviewReason": "matched on name and proximity, not on phone or address"
   },
   {
-    "slug": "790-bay-st-1010",
-    "name": "790 Bay St #1010",
-    "citySlug": "toronto",
-    "cityName": "Toronto",
-    "cityDistanceKm": 0.07,
-    "phone": "4169228223",
-    "lat": 43.6534817,
-    "lng": -79.3839347,
-    "practitioners": [
-      {
-        "fullName": "Aleksandra Habjan",
-        "registrationNumber": "9628"
-      },
-      {
-        "fullName": "Andrew Lovrics",
-        "registrationNumber": "8936"
-      }
-    ],
-    "permits": {
-      "sedation": false,
-      "cbct": false
-    },
-    "sources": [
-      {
-        "source": "rcdso",
-        "sourceId": "790-bay-st-1010-4169228223"
-      },
-      {
-        "source": "rcdso",
-        "sourceId": "790-bay-st-1010-4169603742"
-      },
-      {
-        "source": "rcdso",
-        "sourceId": "790-bay-st-1010-4169228223"
-      },
-      {
-        "source": "rcdso",
-        "sourceId": "790-bay-st-1010-4169603742"
-      }
-    ],
-    "reviewReason": "matched on name and proximity, not on phone or address"
-  },
-  {
     "slug": "2920-dufferin-st-102",
     "name": "2920 Dufferin St #102",
     "citySlug": "toronto",
@@ -6477,98 +6428,6 @@
       {
         "source": "rcdso",
         "sourceId": "simcoe-north-dental-1a-1100-simcoe-st-n"
-      }
-    ],
-    "reviewReason": "matched on name and proximity, not on phone or address"
-  },
-  {
-    "slug": "st-clair-dental-group",
-    "name": "St. Clair Dental Group",
-    "citySlug": "toronto",
-    "cityName": "Toronto",
-    "cityDistanceKm": 0.07,
-    "address": "210 St Clair Ave W, 2nd, Floor",
-    "phone": "4169671770",
-    "lat": 43.6534817,
-    "lng": -79.3839347,
-    "practitioners": [
-      {
-        "fullName": "Anthony Tamberg",
-        "registrationNumber": "10606"
-      },
-      {
-        "fullName": "Ashley Abraham",
-        "registrationNumber": "96775"
-      },
-      {
-        "fullName": "Beatrice Tazlaoanu",
-        "registrationNumber": "37582"
-      },
-      {
-        "fullName": "Jay Niman",
-        "registrationNumber": "9770"
-      },
-      {
-        "fullName": "Kristen Tamberg",
-        "registrationNumber": "124367"
-      },
-      {
-        "fullName": "Lynda Wang",
-        "registrationNumber": "10610"
-      }
-    ],
-    "permits": {
-      "sedation": false,
-      "cbct": false
-    },
-    "sources": [
-      {
-        "source": "rcdso",
-        "sourceId": "st-clair-dental-group-210-st-clair-ave-w-2nd-floor-4169671770"
-      },
-      {
-        "source": "rcdso",
-        "sourceId": "st-clair-dental-associates-65-st-clair-ave-e-100-4169208800"
-      },
-      {
-        "source": "rcdso",
-        "sourceId": "st-clair-dental-associates-65-st-clair-ave-e-100-4169208800"
-      },
-      {
-        "source": "rcdso",
-        "sourceId": "st-clair-dental-associates-65-st-clair-ave-e-100-4169208800"
-      },
-      {
-        "source": "rcdso",
-        "sourceId": "st-clair-dental-group-210-st-clair-ave-w-2nd-floor-4169671770"
-      },
-      {
-        "source": "rcdso",
-        "sourceId": "st-clair-dental-group-210-st-clair-ave-w-2nd-floor-4169671770"
-      },
-      {
-        "source": "rcdso",
-        "sourceId": "st-clair-dental-group-210-st-clair-ave-w-2nd-floor-4169671770"
-      },
-      {
-        "source": "rcdso",
-        "sourceId": "st-clair-dental-associates-65-st-clair-ave-e-100-4169208800"
-      },
-      {
-        "source": "rcdso",
-        "sourceId": "st-clair-dental-associates-65-st-clair-ave-e-100-4169208800"
-      },
-      {
-        "source": "rcdso",
-        "sourceId": "st-clair-dental-associates-65-st-clair-ave-e-100-4169208800"
-      },
-      {
-        "source": "rcdso",
-        "sourceId": "st-clair-dental-group-210-st-clair-ave-w-2nd-floor-4169671770"
-      },
-      {
-        "source": "rcdso",
-        "sourceId": "st-clair-dental-group-210-st-clair-ave-w-2nd-floor-4169671770"
       }
     ],
     "reviewReason": "matched on name and proximity, not on phone or address"
@@ -6850,57 +6709,6 @@
       {
         "source": "rcdso",
         "sourceId": "universite-laval-faculte-de-medecine-dentaire-pavillon-de-medecine-dentaire-loca"
-      }
-    ],
-    "reviewReason": "matched on name and proximity, not on phone or address"
-  },
-  {
-    "slug": "kingsway-endodontics",
-    "name": "Kingsway Endodontics",
-    "citySlug": "toronto",
-    "cityName": "Toronto",
-    "cityDistanceKm": 0.41,
-    "address": "3040 Bloor St W",
-    "phone": "4162332772",
-    "website": "https://www.westendo.com/",
-    "lat": 43.66825,
-    "lng": -79.39634,
-    "practitioners": [
-      {
-        "fullName": "Christian Dacko",
-        "registrationNumber": "14012",
-        "specialty": "Endodontics"
-      },
-      {
-        "fullName": "Thomas Vesz",
-        "registrationNumber": "11166",
-        "specialty": "Endodontics"
-      }
-    ],
-    "permits": {
-      "sedation": false,
-      "cbct": false
-    },
-    "sources": [
-      {
-        "source": "rcdso",
-        "sourceId": "kingsway-endodontics-3040-bloor-st-w"
-      },
-      {
-        "source": "rcdso",
-        "sourceId": "kingsway-endodontics-2895-bloor-st-w-4162332772"
-      },
-      {
-        "source": "rcdso",
-        "sourceId": "kingsway-endodontics-3040-bloor-st-w"
-      },
-      {
-        "source": "rcdso",
-        "sourceId": "kingsway-endodontics-2895-bloor-st-w-4162332772"
-      },
-      {
-        "source": "osm",
-        "sourceId": "node/6306326500"
       }
     ],
     "reviewReason": "matched on name and proximity, not on phone or address"
@@ -7248,13 +7056,14 @@
   {
     "slug": "toronto-public-health-department",
     "name": "Toronto Public Health Department",
-    "citySlug": "toronto",
-    "cityName": "Toronto",
-    "cityDistanceKm": 0.07,
+    "citySlug": "agincourt",
+    "cityName": "Agincourt",
+    "municipality": "Toronto",
+    "cityDistanceKm": 2.09,
     "address": "277 Victoria Streeet 4th Floor",
     "phone": "4163382244",
-    "lat": 43.6534817,
-    "lng": -79.3839347,
+    "lat": 43.77321,
+    "lng": -79.25911,
     "practitioners": [
       {
         "fullName": "Geeta Bolisetty",
@@ -7618,57 +7427,6 @@
       {
         "source": "rcdso",
         "sourceId": "old-town-dental-studio-2-57-ontario-st"
-      }
-    ],
-    "reviewReason": "matched on name and proximity, not on phone or address"
-  },
-  {
-    "slug": "600-sherbourne-st-815",
-    "name": "600 Sherbourne St #815",
-    "citySlug": "toronto",
-    "cityName": "Toronto",
-    "cityDistanceKm": 0.07,
-    "phone": "4169280189",
-    "lat": 43.6534817,
-    "lng": -79.3839347,
-    "practitioners": [
-      {
-        "fullName": "Janice Goodman",
-        "registrationNumber": "8911"
-      },
-      {
-        "fullName": "Maria Penalo de Almonte",
-        "registrationNumber": "114912"
-      }
-    ],
-    "permits": {
-      "sedation": false,
-      "cbct": false
-    },
-    "sources": [
-      {
-        "source": "rcdso",
-        "sourceId": "600-sherbourne-st-815-4169280189"
-      },
-      {
-        "source": "rcdso",
-        "sourceId": "600-sherbourne-st-815-4164832558"
-      },
-      {
-        "source": "rcdso",
-        "sourceId": "600-sherbourne-st-815-4164832558"
-      },
-      {
-        "source": "rcdso",
-        "sourceId": "600-sherbourne-st-815-4169280189"
-      },
-      {
-        "source": "rcdso",
-        "sourceId": "600-sherbourne-st-815-4164832558"
-      },
-      {
-        "source": "rcdso",
-        "sourceId": "600-sherbourne-st-815-4169280189"
       }
     ],
     "reviewReason": "matched on name and proximity, not on phone or address"
@@ -8074,71 +7832,6 @@
     "reviewReason": "matched on name and proximity, not on phone or address"
   },
   {
-    "slug": "bloor-west-dental",
-    "name": "Bloor West Dental",
-    "citySlug": "toronto",
-    "cityName": "Toronto",
-    "cityDistanceKm": 0.41,
-    "address": "2382 Bloor St W #A",
-    "phone": "4167694220",
-    "website": "https://bloorwestdental.ca/",
-    "lat": 43.66825,
-    "lng": -79.39634,
-    "practitioners": [
-      {
-        "fullName": "Lubov Zigan",
-        "registrationNumber": "13304"
-      },
-      {
-        "fullName": "Nishita Ondhia",
-        "registrationNumber": "13885"
-      },
-      {
-        "fullName": "Shael Markin",
-        "registrationNumber": "109025"
-      }
-    ],
-    "permits": {
-      "sedation": false,
-      "cbct": false
-    },
-    "sources": [
-      {
-        "source": "rcdso",
-        "sourceId": "bloor-west-dental-2382-bloor-st-w-a-4167694220"
-      },
-      {
-        "source": "rcdso",
-        "sourceId": "bloor-west-dental-2475-bloor-st-w-6473527446"
-      },
-      {
-        "source": "rcdso",
-        "sourceId": "bloor-west-dental-2475-bloor-st-w-6473527446"
-      },
-      {
-        "source": "rcdso",
-        "sourceId": "bloor-west-dental-2382-bloor-st-w-a-4167694220"
-      },
-      {
-        "source": "rcdso",
-        "sourceId": "bloor-west-dental-2475-bloor-st-w-6473527446"
-      },
-      {
-        "source": "rcdso",
-        "sourceId": "bloor-west-dental-2475-bloor-st-w-6473527446"
-      },
-      {
-        "source": "osm",
-        "sourceId": "node/2288606552"
-      },
-      {
-        "source": "osm",
-        "sourceId": "node/2405823213"
-      }
-    ],
-    "reviewReason": "matched on name and proximity, not on phone or address"
-  },
-  {
     "slug": "1-yorkville-dental",
     "name": "1 Yorkville Dental",
     "citySlug": "toronto",
@@ -8345,6 +8038,47 @@
       {
         "source": "rcdso",
         "sourceId": "276-davenport-rd"
+      }
+    ],
+    "reviewReason": "matched on name and proximity, not on phone or address"
+  },
+  {
+    "slug": "beach-kids-dentistry",
+    "name": "Beach Kids Dentistry",
+    "citySlug": "toronto",
+    "cityName": "Toronto",
+    "cityDistanceKm": 3.31,
+    "address": "2271 Queen St E Lower Level",
+    "phone": "4166995437",
+    "lat": 43.67158,
+    "lng": -79.29289,
+    "practitioners": [
+      {
+        "fullName": "Mohamed Cassim",
+        "registrationNumber": "113740",
+        "specialty": "Pediatric Dentistry"
+      }
+    ],
+    "permits": {
+      "sedation": false,
+      "cbct": false
+    },
+    "sources": [
+      {
+        "source": "rcdso",
+        "sourceId": "beach-kids-dentistry-2271-queen-st-e-lower-level-4166995437"
+      },
+      {
+        "source": "rcdso",
+        "sourceId": "beach-kids-dentistry-2271-queen-st-e-lower-level-4166995437"
+      },
+      {
+        "source": "rcdso",
+        "sourceId": "beach-kids-dentistry-2271-queen-st-e-lower-level-4166995437"
+      },
+      {
+        "source": "osm",
+        "sourceId": "node/11189268829"
       }
     ],
     "reviewReason": "matched on name and proximity, not on phone or address"
@@ -9363,54 +9097,6 @@
     "reviewReason": "matched on name and proximity, not on phone or address"
   },
   {
-    "slug": "123-collier-st",
-    "name": "123 Collier St",
-    "citySlug": "barrie",
-    "cityName": "Barrie",
-    "cityDistanceKm": 0.02,
-    "phone": "7057196228",
-    "lat": 44.3893208,
-    "lng": -79.6901302,
-    "practitioners": [
-      {
-        "fullName": "James Nguyen",
-        "registrationNumber": "92254"
-      },
-      {
-        "fullName": "Margaret McGillis",
-        "registrationNumber": "9045",
-        "specialty": "Orthodontics"
-      }
-    ],
-    "permits": {
-      "sedation": false,
-      "cbct": false
-    },
-    "sources": [
-      {
-        "source": "rcdso",
-        "sourceId": "123-collier-st-7057196228"
-      },
-      {
-        "source": "rcdso",
-        "sourceId": "123-collier-st-7057396238"
-      },
-      {
-        "source": "rcdso",
-        "sourceId": "123-collier-st-7057196228"
-      },
-      {
-        "source": "rcdso",
-        "sourceId": "123-collier-st-7057196228"
-      },
-      {
-        "source": "rcdso",
-        "sourceId": "123-collier-st-7057396238"
-      }
-    ],
-    "reviewReason": "matched on name and proximity, not on phone or address"
-  },
-  {
     "slug": "innisfil-dental",
     "name": "Innisfil Dental",
     "citySlug": "innisfil",
@@ -10024,39 +9710,6 @@
     "reviewReason": "matched on name and proximity, not on phone or address"
   },
   {
-    "slug": "beaumaris-dental-care",
-    "name": "Beaumaris Dental Care",
-    "citySlug": "woodbridge",
-    "cityName": "Woodbridge",
-    "municipality": "Vaughan",
-    "cityDistanceKm": 5.43,
-    "address": "15 Beaumaris Dr #C4",
-    "phone": "9057981885",
-    "lat": 43.76454,
-    "lng": -79.66076,
-    "practitioners": [
-      {
-        "fullName": "Sara Mathew",
-        "registrationNumber": "114604"
-      }
-    ],
-    "permits": {
-      "sedation": false,
-      "cbct": false
-    },
-    "sources": [
-      {
-        "source": "rcdso",
-        "sourceId": "beaumaris-dental-care-15-beaumaris-dr-c4-9057981885"
-      },
-      {
-        "source": "osm",
-        "sourceId": "node/10677393113"
-      }
-    ],
-    "reviewReason": "matched on name and proximity, not on phone or address"
-  },
-  {
     "slug": "661-sheppard-ave-w",
     "name": "661 Sheppard Ave W",
     "citySlug": "willowdale",
@@ -10220,6 +9873,59 @@
     "reviewReason": "matched on name and proximity, not on phone or address"
   },
   {
+    "slug": "smile-care-dental",
+    "name": "Smile Care Dental",
+    "citySlug": "cambridge",
+    "cityName": "Cambridge",
+    "cityDistanceKm": 5.58,
+    "address": "209 Pinebush Rd #7",
+    "phone": "5197403884",
+    "lat": 43.41158,
+    "lng": -80.30791,
+    "practitioners": [
+      {
+        "fullName": "Adam Szymczak",
+        "registrationNumber": "13479"
+      },
+      {
+        "fullName": "Joanne Baldos",
+        "registrationNumber": "13842"
+      },
+      {
+        "fullName": "Sadia Tasleem",
+        "registrationNumber": "117037",
+        "specialty": "Periodontics"
+      }
+    ],
+    "permits": {
+      "sedation": false,
+      "cbct": false
+    },
+    "sources": [
+      {
+        "source": "rcdso",
+        "sourceId": "smile-care-dental-209-pinebush-rd-7-5197403884"
+      },
+      {
+        "source": "rcdso",
+        "sourceId": "smile-care-dental-209-pinebush-rd-7-5197403884"
+      },
+      {
+        "source": "rcdso",
+        "sourceId": "smile-care-dental-209-pinebush-rd-7-5197403884"
+      },
+      {
+        "source": "rcdso",
+        "sourceId": "smile-care-dental-209-pinebush-rd-7-5197403884"
+      },
+      {
+        "source": "osm",
+        "sourceId": "node/493001926"
+      }
+    ],
+    "reviewReason": "matched on name and proximity, not on phone or address"
+  },
+  {
     "slug": "bruce-family-dentistry",
     "name": "Bruce Family Dentistry",
     "citySlug": "cambridge",
@@ -10255,10 +9961,10 @@
     "name": "6 George St N",
     "citySlug": "cambridge",
     "cityName": "Cambridge",
-    "cityDistanceKm": 4.76,
+    "cityDistanceKm": 2.52,
     "phone": "5196210370",
-    "lat": 43.402366,
-    "lng": -80.3322844,
+    "lat": 43.3809482,
+    "lng": -80.3306112,
     "practitioners": [
       {
         "fullName": "Jeffrey Matyas",
@@ -10734,38 +10440,6 @@
     "reviewReason": "matched on name and proximity, not on phone or address"
   },
   {
-    "slug": "downtown-dentistry",
-    "name": "Downtown Dentistry",
-    "citySlug": "guelph",
-    "cityName": "Guelph",
-    "cityDistanceKm": 3.06,
-    "address": "4-218 Silvercreek Pky N",
-    "phone": "5198217640",
-    "lat": 43.54414,
-    "lng": -80.28613,
-    "practitioners": [
-      {
-        "fullName": "Jaroslaw Foksa",
-        "registrationNumber": "50188"
-      }
-    ],
-    "permits": {
-      "sedation": false,
-      "cbct": false
-    },
-    "sources": [
-      {
-        "source": "rcdso",
-        "sourceId": "downtown-dentistry-4-218-silvercreek-pky-n-5198217640"
-      },
-      {
-        "source": "osm",
-        "sourceId": "node/12847784203"
-      }
-    ],
-    "reviewReason": "matched on name and proximity, not on phone or address"
-  },
-  {
     "slug": "1338-south-service-rd-4-bldg-c5",
     "name": "1338 South Service Rd #4 Bldg C5",
     "citySlug": "guelph",
@@ -10791,41 +10465,6 @@
       {
         "source": "rcdso",
         "sourceId": "1338-south-service-rd-4-bldg-c5"
-      }
-    ],
-    "reviewReason": "matched on name and proximity, not on phone or address"
-  },
-  {
-    "slug": "1508-upper-james-st-223",
-    "name": "1508 Upper James St #223",
-    "citySlug": "hamilton",
-    "cityName": "Hamilton",
-    "cityDistanceKm": 0.15,
-    "phone": "9055264873",
-    "lat": 43.2560802,
-    "lng": -79.8728583,
-    "practitioners": [
-      {
-        "fullName": "Alia Abdul Majeed",
-        "registrationNumber": "119875"
-      },
-      {
-        "fullName": "Khawla Aboudiab",
-        "registrationNumber": "108116"
-      }
-    ],
-    "permits": {
-      "sedation": false,
-      "cbct": false
-    },
-    "sources": [
-      {
-        "source": "rcdso",
-        "sourceId": "1508-upper-james-st-223-9055264873"
-      },
-      {
-        "source": "rcdso",
-        "sourceId": "1508-upper-james-st-223"
       }
     ],
     "reviewReason": "matched on name and proximity, not on phone or address"
@@ -11182,57 +10821,6 @@
       {
         "source": "osm",
         "sourceId": "node/13401876990"
-      }
-    ],
-    "reviewReason": "matched on name and proximity, not on phone or address"
-  },
-  {
-    "slug": "65-glasgow-st",
-    "name": "65 Glasgow St",
-    "citySlug": "kitchener",
-    "cityName": "Kitchener",
-    "cityDistanceKm": 2.71,
-    "phone": "5195768060",
-    "lat": 43.4303519,
-    "lng": -80.4759361,
-    "practitioners": [
-      {
-        "fullName": "Alvaro Martinez",
-        "registrationNumber": "13229"
-      },
-      {
-        "fullName": "Jacob George",
-        "registrationNumber": "58429"
-      },
-      {
-        "fullName": "Shayne Degen",
-        "registrationNumber": "53113"
-      },
-      {
-        "fullName": "Surrendra Singh",
-        "registrationNumber": "62022"
-      }
-    ],
-    "permits": {
-      "sedation": false,
-      "cbct": false
-    },
-    "sources": [
-      {
-        "source": "rcdso",
-        "sourceId": "65-glasgow-st-5195768060"
-      },
-      {
-        "source": "rcdso",
-        "sourceId": "65-glasgow-st-5195768060"
-      },
-      {
-        "source": "rcdso",
-        "sourceId": "65-glasgow-st-5195768060"
-      },
-      {
-        "source": "rcdso",
-        "sourceId": "65-glasgow-st-5197433261"
       }
     ],
     "reviewReason": "matched on name and proximity, not on phone or address"
@@ -12079,6 +11667,38 @@
     "reviewReason": "matched on name and proximity, not on phone or address"
   },
   {
+    "slug": "sky-dental",
+    "name": "Sky Dental",
+    "citySlug": "thunder-bay",
+    "cityName": "Thunder Bay",
+    "cityDistanceKm": 2.26,
+    "address": "2817 Arthur St E",
+    "phone": "8076239445",
+    "lat": 48.38084,
+    "lng": -89.27826,
+    "practitioners": [
+      {
+        "fullName": "Sami Fatayer",
+        "registrationNumber": "503011"
+      }
+    ],
+    "permits": {
+      "sedation": false,
+      "cbct": false
+    },
+    "sources": [
+      {
+        "source": "rcdso",
+        "sourceId": "sky-dental-2817-arthur-st-e-8076239445"
+      },
+      {
+        "source": "osm",
+        "sourceId": "way/373052188"
+      }
+    ],
+    "reviewReason": "matched on name and proximity, not on phone or address"
+  },
+  {
     "slug": "centro-dental",
     "name": "Centro Dental",
     "citySlug": "woodbridge",
@@ -12137,47 +11757,6 @@
       {
         "source": "rcdso",
         "sourceId": "2101-weston-rd"
-      }
-    ],
-    "reviewReason": "matched on name and proximity, not on phone or address"
-  },
-  {
-    "slug": "techtown-dentistry",
-    "name": "Techtown Dentistry",
-    "citySlug": "waterloo",
-    "cityName": "Waterloo",
-    "cityDistanceKm": 4.2,
-    "address": "180 Northfield Dr W #1",
-    "phone": "5197467333",
-    "website": "https://www.techtowndentistry.com/",
-    "lat": 43.49671,
-    "lng": -80.54717,
-    "practitioners": [
-      {
-        "fullName": "Dabin Jones",
-        "registrationNumber": "120227"
-      },
-      {
-        "fullName": "Timothy Sellner",
-        "registrationNumber": "72890"
-      }
-    ],
-    "permits": {
-      "sedation": false,
-      "cbct": false
-    },
-    "sources": [
-      {
-        "source": "rcdso",
-        "sourceId": "techtown-dentistry-180-northfield-dr-w-1-5197467333"
-      },
-      {
-        "source": "rcdso",
-        "sourceId": "techtown-dentistry-180-northfield-dr-w-1-5197467333"
-      },
-      {
-        "source": "osm",
-        "sourceId": "node/11191907874"
       }
     ],
     "reviewReason": "matched on name and proximity, not on phone or address"

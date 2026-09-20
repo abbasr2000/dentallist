@@ -21,7 +21,7 @@ import {
   type SourceRecord,
 } from "./lib";
 import { resolveCity } from "./places";
-import { locate, placeIndex } from "./locate";
+import { buildExchangeAnchors, locate, placeIndex, stretchesOf } from "./locate";
 import type { StreetIndex } from "./streets";
 import type { GazetteerPlace } from "./gazetteer";
 
@@ -268,7 +268,7 @@ export function mergeRecords(records: SourceRecord[]): MergedClinic[] {
  * wrong one practice was being split into one clinic per city it appeared
  * under — the U of T dental school became seven.
  */
-function locateRegisterRecords(records: SourceRecord[]): void {
+function locateRegisterRecords(records: SourceRecord[], osm: SourceRecord[]): void {
   const streets = readJson<StreetIndex>("ingest/out/streets.json");
   const gazetteer = readJson<GazetteerPlace[]>("ingest/out/gazetteer.json");
 
@@ -282,6 +282,7 @@ function locateRegisterRecords(records: SourceRecord[]): void {
   }
 
   const places = placeIndex(gazetteer);
+
   const groups = new Map<string, SourceRecord[]>();
   for (const record of records) {
     const group = groups.get(record.sourceId) ?? [];
@@ -289,18 +290,44 @@ function locateRegisterRecords(records: SourceRecord[]): void {
     groups.set(record.sourceId, group);
   }
 
+  // Where the phone exchanges are. Seeded from clinics whose position is
+  // already known — every mapped clinic, plus every register practice on a
+  // street that runs in exactly one place in Ontario, which needs no other
+  // evidence. Those 662 practices carry exchange coverage from 46% to 58%.
+  const seeds: Array<{ phone: string | undefined; lat: number; lng: number }> = [];
+  for (const record of osm) {
+    if (record.lat != null && record.lng != null) {
+      seeds.push({ phone: record.phone, lat: record.lat, lng: record.lng });
+    }
+  }
+  let unambiguous = 0;
+  for (const group of groups.values()) {
+    const stretches = stretchesOf(group[0].address, streets);
+    if (stretches.length !== 1) continue;
+    unambiguous++;
+    seeds.push({ phone: group[0].phone, lat: stretches[0].lat, lng: stretches[0].lng });
+  }
+  const anchors = buildExchangeAnchors(seeds);
+  console.log(
+    `  ${anchors.size} phone exchanges located (${unambiguous} practices sit on a street that runs in one place only)`,
+  );
+
   const basisCount = new Map<string, number>();
   let placed = 0;
+  let confident = 0;
 
   for (const group of groups.values()) {
     const found = locate(
       group[0].address,
+      group[0].phone,
       group.map((r) => r.city),
       streets,
       places,
+      anchors,
     );
     if (!found) continue;
     placed++;
+    if (found.confident) confident++;
     basisCount.set(found.basis, (basisCount.get(found.basis) ?? 0) + 1);
     for (const record of group) {
       record.lat = found.lat;
@@ -308,7 +335,7 @@ function locateRegisterRecords(records: SourceRecord[]): void {
     }
   }
 
-  console.log(`  located ${placed}/${groups.size} register practices`);
+  console.log(`  located ${placed}/${groups.size} register practices, ${confident} on two agreeing signals`);
   for (const [basis, count] of [...basisCount].sort((a, b) => b[1] - a[1])) {
     console.log(`    ${count} by ${basis}`);
   }
@@ -324,7 +351,7 @@ function main() {
   }
 
   console.log(`Merging ${rcdso.length} RCDSO + ${osm.length} OSM records`);
-  locateRegisterRecords(rcdso);
+  locateRegisterRecords(rcdso, osm);
   const clinics = mergeRecords([...rcdso, ...osm]);
 
   const bothSources = clinics.filter(
