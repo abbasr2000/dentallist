@@ -197,6 +197,18 @@ export function graph(...nodes: Array<Json | null>): string {
   });
 }
 
+/** The same page one level up: a procedure across the whole province. */
+export function regionProcedurePage(procedure: ProcedureKey, clinics: Clinic[]): Json {
+  const proc = getProcedure(procedure);
+  const name = `${proc?.label ?? procedure} in ${SITE.region}`;
+  return collectionPage(
+    paths.procedureInRegion(procedure),
+    name,
+    `Dental clinics across ${SITE.region} listed for ${(proc?.label ?? procedure).toLowerCase()}, ordered by verifiable evidence from the RCDSO public register.`,
+    clinicList(clinics, name),
+  );
+}
+
 export function procedurePage(
   city: City,
   procedure: ProcedureKey,

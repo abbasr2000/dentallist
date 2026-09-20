@@ -4,6 +4,7 @@ import {
   allClinics,
   cityStats,
   indexableProcedurePages,
+  rankedForProcedureInRegion,
 } from "@/lib/data";
 import { PROCEDURES } from "@/lib/procedures";
 import { EVIDENCE_WEIGHT } from "@/lib/types";
@@ -90,6 +91,7 @@ quality.
 - ${SITE_URL}/ — home
 - ${SITE_URL}${paths.region()} — ${SITE.region} overview, links to every city
 - ${SITE_URL}${paths.city("{city}")} — one city: all clinics, counts, procedures
+- ${SITE_URL}${paths.procedureInRegion("{procedure}")} — one procedure across the province, clinics ordered by evidence
 - ${SITE_URL}${paths.procedureInCity("{city}", "{procedure}")} — one procedure in one city, clinics ordered by evidence
 - ${SITE_URL}${paths.clinic("{city}", "{clinic}")} — one clinic profile
 - ${SITE_URL}${paths.methodology()} — how scoring works
@@ -130,7 +132,18 @@ ${cities
   })
   .join("\n")}
 
-## Indexable procedure pages
+## Procedure pages, province-wide
+
+${
+  PROCEDURES.filter((proc) => rankedForProcedureInRegion(proc.key).length > 0)
+    .map((proc) => {
+      const n = rankedForProcedureInRegion(proc.key).length;
+      return `- ${proc.label}: ${n} clinics — ${SITE_URL}${paths.procedureInRegion(proc.key)}`;
+    })
+    .join("\n") || "(none yet — no clinic carries evidence for any procedure)"
+}
+
+## Procedure pages, by city
 
 ${
   indexableProcedurePages().length === 0

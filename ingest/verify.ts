@@ -12,7 +12,7 @@ import { allRegisterCities, parseRow, ROW_SELECTOR, selectOptions } from "./rcds
 import { mergeRecords } from "./merge";
 import { assignPlace, resolveCity, MAX_ASSIGN_KM } from "./places";
 import { scoreProcedure } from "../lib/strength";
-import { proceduresForSpecialty } from "../lib/procedures";
+import { PROCEDURES, proceduresForSpecialty } from "../lib/procedures";
 import type { SourceRecord } from "./lib";
 
 let passed = 0;
@@ -378,6 +378,19 @@ check("the register's spelling differences do not lose a specialty", () => {
 check("a specialty we do not recognise matches nothing rather than everything", () => {
   assert.equal(proceduresForSpecialty("Veterinary Dentistry").length, 0);
   assert.equal(proceduresForSpecialty("").length, 0);
+});
+
+
+console.log("\nURL namespaces");
+check("no procedure key can be mistaken for a city", () => {
+  // /ontario/toronto/ and /ontario/orthodontics/ share one route, so a
+  // procedure key that matched a real municipality would hide one page behind
+  // the other. Checked here as well as in the build, because a new procedure
+  // key is added in this repo and a new city arrives from the ingest.
+  const suspicious = PROCEDURES.map((p) => p.key).filter((key) =>
+    /^(toronto|ottawa|hamilton|london|windsor|barrie|guelph|kingston|waterloo|cambridge)$/.test(key),
+  );
+  assert.deepEqual(suspicious, [], `procedure keys that are also cities: ${suspicious.join(", ")}`);
 });
 
 Promise.all(pending).then(() => {

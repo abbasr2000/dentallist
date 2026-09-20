@@ -10,16 +10,46 @@ import {
   procedureCountsForCity,
   procedurePageIsIndexable,
   rankedForCity,
+  rankedForProcedureInRegion,
 } from "@/lib/data";
-import { getProcedure } from "@/lib/procedures";
+import { getProcedure, PROCEDURES } from "@/lib/procedures";
+import { RegionProcedure, regionProcedureMetadata } from "@/components/RegionProcedure";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { ClinicRow } from "@/components/ClinicRow";
 import { JsonLd } from "@/components/JsonLd";
 import { Faq } from "@/components/Faq";
 import * as S from "@/lib/schema";
 
+/**
+ * This route serves two kinds of page, because /ontario/toronto/ and
+ * /ontario/orthodontics/ are the same shape and Next cannot tell two dynamic
+ * segments apart at one level. The alternative was /ontario/procedure/… , and
+ * the shorter URL is the one that competes.
+ *
+ * It is only safe because the two namespaces cannot collide: no Ontario
+ * municipality is named after a dental procedure. `assertNoSlugCollision`
+ * fails the build rather than trusting that, since a collision would silently
+ * hide one page behind the other.
+ */
+function assertNoSlugCollision(): void {
+  const cities = new Set(allCities().map((c) => c.slug));
+  const clashes = PROCEDURES.map((p) => p.key).filter((key) => cities.has(key));
+  if (clashes.length > 0) {
+    throw new Error(
+      `A city slug and a procedure key collide: ${clashes.join(", ")}. ` +
+        "One of the two pages would be unreachable — rename the procedure key.",
+    );
+  }
+}
+
 export function generateStaticParams() {
-  return allCities().map((c) => ({ region: SITE.regionSlug, city: c.slug }));
+  assertNoSlugCollision();
+  return [
+    ...allCities().map((c) => ({ region: SITE.regionSlug, city: c.slug })),
+    ...PROCEDURES
+      .filter((proc) => rankedForProcedureInRegion(proc.key).length > 0)
+      .map((proc) => ({ region: SITE.regionSlug, city: proc.key })),
+  ];
 }
 
 export async function generateMetadata({
@@ -28,6 +58,10 @@ export async function generateMetadata({
   params: Promise<{ city: string }>;
 }): Promise<Metadata> {
   const { city: citySlug } = await params;
+
+  const asProcedure = regionProcedureMetadata(citySlug);
+  if (asProcedure) return asProcedure;
+
   const city = getCity(citySlug);
   if (!city) return {};
   const stats = cityStats(citySlug);
@@ -45,6 +79,9 @@ export default async function CityPage({
 }) {
   const { region, city: citySlug } = await params;
   if (region !== SITE.regionSlug) notFound();
+
+  // A procedure key here means the province-wide page for that procedure.
+  if (getProcedure(citySlug)) return <RegionProcedure procedureKey={citySlug} />;
 
   const city = getCity(citySlug);
   if (!city) notFound();

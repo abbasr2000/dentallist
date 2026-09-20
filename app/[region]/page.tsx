@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { SITE, paths } from "@/lib/site";
-import { allCities, allClinics, cityStats } from "@/lib/data";
+import { allCities, allClinics, cityStats, rankedForProcedureInRegion } from "@/lib/data";
+import { PROCEDURES } from "@/lib/procedures";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { JsonLd } from "@/components/JsonLd";
 import { Faq } from "@/components/Faq";
@@ -89,6 +90,36 @@ export default async function RegionPage({
           <div><b>{totals.accepting}</b><span>Accepting new patients</span></div>
           <div><b>{totals.languages}</b><span>Languages besides English</span></div>
         </div>
+
+        {/* Procedures first: someone who knows what they need should not have
+            to pick a city before they can look for it. A procedure with no
+            clinic behind it gets no link rather than an empty page. */}
+        {(() => {
+          const offered = PROCEDURES
+            .map((proc) => ({ proc, count: rankedForProcedureInRegion(proc.key).length }))
+            .filter((entry) => entry.count > 0)
+            .sort((a, b) => b.count - a.count);
+          if (offered.length === 0) return null;
+          return (
+            <section style={{ marginBottom: 40 }}>
+              <h2 style={{ fontSize: "1.3rem", marginBottom: 4 }}>By what you need</h2>
+              <p style={{ fontSize: 14.5, color: "var(--color-ink-faint)", marginBottom: 14 }}>
+                Clinics with evidence on the RCDSO public register that they treat it,
+                not clinics that say they do.
+              </p>
+              <ul style={{ display: "flex", flexWrap: "wrap", gap: "8px 10px" }}>
+                {offered.map(({ proc, count }) => (
+                  <li key={proc.key}>
+                    <a href={paths.procedureInRegion(proc.key)} className="tile-link" style={{ display: "inline-block", padding: "8px 14px" }}>
+                      {proc.label}{" "}
+                      <span style={{ color: "var(--color-ink-faint)" }}>({count})</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          );
+        })()}
 
         <h2 style={{ fontSize: "1.3rem", marginBottom: 16 }}>Cities</h2>
         <ul style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))", gap: 12 }}>

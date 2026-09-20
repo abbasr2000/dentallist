@@ -30,6 +30,10 @@ export const paths = {
   home: () => "/",
   region: () => `/${SITE.regionSlug}/`,
   city: (city: string) => `/${SITE.regionSlug}/${city}/`,
+  // Province-wide, e.g. /ontario/orthodontics/. "Orthodontist in Ontario" has
+  // to land somewhere, and it is the one procedure URL certain to clear the
+  // data floor.
+  procedureInRegion: (procedure: string) => `/${SITE.regionSlug}/${procedure}/`,
   procedureInCity: (city: string, procedure: string) =>
     `/${SITE.regionSlug}/${city}/${procedure}/`,
   clinic: (city: string, slug: string) => `/clinic/${city}/${slug}/`,

@@ -48,7 +48,7 @@ export async function generateMetadata({
   const indexable = procedurePageIsIndexable(citySlug, proc.key);
 
   return {
-    title: `${proc.label} in ${city.name} — ${clinics.length} clinics`,
+    title: `${proc.label} in ${city.name} — ${clinics.length} ${clinics.length === 1 ? "clinic" : "clinics"}`,
     description: `Dental clinics in ${city.name} offering ${proc.label.toLowerCase()}, ordered by verifiable evidence. ${proc.whatMatters}`,
     alternates: {
       canonical: indexable

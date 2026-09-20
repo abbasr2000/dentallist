@@ -137,6 +137,38 @@ export function clinicsInNeighbourhood(
  * the sitemap. This is the guard against shipping thousands of near-empty
  * pages, which is how programmatic SEO earns a manual action.
  */
+/**
+ * Every clinic in the province with evidence for a procedure, strongest first.
+ *
+ * The province page is the one procedure URL that always has enough behind it,
+ * and it is where a city page's thin procedure list should send a reader rather
+ * than nowhere.
+ */
+export function rankedForProcedureInRegion(procedure: ProcedureKey): Clinic[] {
+  return CLINICS
+    .filter((c) => strengthFor(c, procedure) > 0)
+    .sort(
+      (a, b) =>
+        strengthFor(b, procedure) - strengthFor(a, procedure) ||
+        clinicCompleteness(b) - clinicCompleteness(a) ||
+        a.name.localeCompare(b.name),
+    );
+}
+
+/** The cities with enough clinics for this procedure to be worth a link. */
+export function citiesWithProcedure(
+  procedure: ProcedureKey,
+): Array<{ city: City; count: number; indexable: boolean }> {
+  return CITIES
+    .map((city) => ({
+      city,
+      count: rankedForProcedure(city.slug, procedure).length,
+      indexable: procedurePageIsIndexable(city.slug, procedure),
+    }))
+    .filter((entry) => entry.count > 0)
+    .sort((a, b) => b.count - a.count || a.city.name.localeCompare(b.city.name));
+}
+
 export function procedurePageIsIndexable(
   citySlug: string,
   procedure: ProcedureKey,
