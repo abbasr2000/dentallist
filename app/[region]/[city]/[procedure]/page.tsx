@@ -2,11 +2,13 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { SITE, paths } from "@/lib/site";
 import {
+  allCities,
+  builtProcedurePages,
   getCity,
-  indexableProcedurePages,
   procedurePageIsIndexable,
   rankedForProcedure,
 } from "@/lib/data";
+import { PROCEDURES } from "@/lib/procedures";
 import { getProcedure } from "@/lib/procedures";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { ClinicRow } from "@/components/ClinicRow";
@@ -27,7 +29,20 @@ import * as S from "@/lib/schema";
  */
 
 export function generateStaticParams() {
-  return indexableProcedurePages().map(({ city, procedure }) => ({
+  const pairs = builtProcedurePages();
+
+  // The site exports to static HTML, and a static export needs every route to
+  // produce at least one page. Before the register has run, no clinic carries
+  // procedure evidence and this would be empty, so fall back to one real pair.
+  // The page then says plainly that nothing is listed yet, which is true and
+  // better than a 404 on a URL that will exist tomorrow.
+  const params = pairs.length > 0
+    ? pairs
+    : [{ city: allCities()[0]?.slug, procedure: PROCEDURES[0].key }].filter(
+        (p): p is { city: string; procedure: typeof PROCEDURES[number]["key"] } => Boolean(p.city),
+      );
+
+  return params.map(({ city, procedure }) => ({
     region: SITE.regionSlug,
     city,
     procedure,
@@ -45,7 +60,7 @@ export async function generateMetadata({
   if (!city || !proc) return {};
 
   const clinics = rankedForProcedure(citySlug, proc.key);
-  const indexable = procedurePageIsIndexable(citySlug, proc.key);
+  const indexable = clinics.length > 0 && procedurePageIsIndexable(citySlug, proc.key);
 
   return {
     title: `${proc.label} in ${city.name} — ${clinics.length} ${clinics.length === 1 ? "clinic" : "clinics"}`,
@@ -72,8 +87,6 @@ export default async function ProcedurePage({
   if (!city || !proc) notFound();
 
   const clinics = rankedForProcedure(citySlug, proc.key);
-  if (clinics.length === 0) notFound();
-
   const withRegisterEvidence = clinics.filter((c) =>
     c.procedures
       .find((p) => p.procedure === proc.key)
@@ -153,6 +166,27 @@ export default async function ProcedurePage({
           )}
         </div>
 
+        {clinics.length === 0 ? (
+          <div className="panel prose-col" style={{ marginBottom: 32 }}>
+            <h2 style={{ fontSize: "1.05rem", marginBottom: 8 }}>
+              Nothing listed for this in {city.name} yet
+            </h2>
+            <p style={{ margin: 0, fontSize: 15.5, color: "var(--color-ink-soft)" }}>
+              No clinic here has evidence on the RCDSO public register or a
+              sourced statement of its own that it does{" "}
+              {proc.label.toLowerCase()}. Rather than guess, the page says so.{" "}
+              <a href={paths.city(citySlug)} className="inline-link">
+                See every clinic in {city.name}
+              </a>{" "}
+              or{" "}
+              <a href={paths.addClinic()} className="inline-link">
+                add a practice
+              </a>
+              .
+            </p>
+          </div>
+        ) : (
+        <>
         <h2 style={{ fontSize: "1.2rem", marginBottom: 4 }}>
           Clinics, strongest evidence first
         </h2>
@@ -167,6 +201,8 @@ export default async function ProcedurePage({
             <ClinicRow key={clinic.slug} clinic={clinic} highlight={proc.key} />
           ))}
         </ul>
+        </>
+        )}
 
         <Faq items={faq} />
 

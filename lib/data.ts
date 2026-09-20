@@ -183,6 +183,29 @@ export function cityPageIsIndexable(citySlug: string): boolean {
   return clinicsInCity(citySlug).length >= INDEX_FLOOR.clinicsPerCityPage;
 }
 
+/**
+ * Every (city, procedure) pair with at least one clinic behind it.
+ *
+ * Distinct from the indexable set: these pages are built and linkable but
+ * canonical to the city page and kept out of the sitemap. A URL that exists in
+ * one build and 404s in the next, because a clinic was removed and the page
+ * dropped below the floor, is worse than a thin page that says so.
+ */
+export function builtProcedurePages(): Array<{
+  city: string;
+  procedure: ProcedureKey;
+}> {
+  const out: Array<{ city: string; procedure: ProcedureKey }> = [];
+  for (const city of CITIES) {
+    for (const proc of PROCEDURES) {
+      if (rankedForProcedure(city.slug, proc.key).length > 0) {
+        out.push({ city: city.slug, procedure: proc.key });
+      }
+    }
+  }
+  return out;
+}
+
 /** Every (city, procedure) pair worth building a page for. */
 export function indexableProcedurePages(): Array<{
   city: string;

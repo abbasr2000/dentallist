@@ -1,3 +1,5 @@
+export const dynamic = "force-static";
+
 import { SITE, SITE_URL, paths } from "@/lib/site";
 import {
   allCities,
@@ -16,7 +18,6 @@ import { EVIDENCE_WEIGHT } from "@/lib/types";
  * publishes a hand-written one that says "77,000+ profiles" while the site says
  * 13,090. A stale manual is worse than none, because a model will quote it.
  */
-export const dynamic = "force-static";
 
 export function GET() {
   const cities = allCities();
