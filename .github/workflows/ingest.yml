@@ -18,6 +18,7 @@ on:
           - osm+rcdso
           - rcdso
           - rcdso-probe
+          - places
       rcdso_cities:
         description: "RCDSO: comma-separated cities, or 'all' for every city on the register"
         type: string
@@ -78,6 +79,21 @@ jobs:
           else
             npx tsx ingest/rcdso.ts --cities-list "$CITIES_INPUT"
           fi
+
+      # Where Ontario's places and the register's streets are. Both are needed
+      # to place a practice: the register prints a street and no city, and its
+      # search matches where a dentist lives rather than where they work, so
+      # without these the city is wrong on about two clinics in five.
+      #
+      # Cheap next to the register walk — the gazetteer is one query and the
+      # streets are a few dozen — and both resume, so a cut run costs little.
+      - name: Ontario places
+        if: ${{ always() && inputs.sources != 'rcdso-probe' }}
+        run: npx tsx ingest/gazetteer.ts
+
+      - name: Locate the register's streets
+        if: ${{ always() && inputs.sources != 'rcdso-probe' && inputs.sources != 'osm' }}
+        run: npx tsx ingest/streets.ts
 
       # always(), because the register walk can run for over an hour and be cut
       # short by a job timeout or a runner eviction. It checkpoints as it goes,

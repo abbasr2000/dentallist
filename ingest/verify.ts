@@ -14,6 +14,8 @@ import { assignPlace, resolveCity, MAX_ASSIGN_KM } from "./places";
 import { scoreProcedure } from "../lib/strength";
 import { PROCEDURES, proceduresForSpecialty } from "../lib/procedures";
 import { resolveSiteUrl } from "../lib/site";
+import { osmStreetName, streetFrom } from "./streetname";
+import { clusterPoints, streetNamesFrom } from "./streets";
 import type { SourceRecord } from "./lib";
 
 let passed = 0;
@@ -486,6 +488,80 @@ check("no amount of self-description reaches a registered specialist", () => {
     selfDescribed < oneRegistration,
     `self-described ${selfDescribed} must stay below one registration ${oneRegistration}`,
   );
+});
+
+console.log("\nReading a street out of a register address");
+check("the street survives house numbers, units and building names", () => {
+  const cases: Array<[string, string]> = [
+    ["Unit-4 1295 Carling Ave", "Carling Avenue"],
+    ["124 Edward St #356B", "Edward Street"],
+    ["550 King St N Conestoga Mall", "King Street North"],
+    ["3630 Lawrence Ave E", "Lawrence Avenue East"],
+    ["1580 Merivale Rd", "Merivale Road"],
+    ["206 Main St W, #2", "Main Street West"],
+    ["Radiology Clinic 124 Edward St.", "Edward Street"],
+    ["77 Queensway W 301", "Queensway West"],
+    ["459 Holland St W Bdg F 1", "Holland Street West"],
+    ["7010 Warden Ave 19", "Warden Avenue"],
+    ["130 Silvercreek Pkwy N 1", "Silvercreek Parkway North"],
+  ];
+  for (const [address, expected] of cases) {
+    assert.equal(osmStreetName(address), expected, `from ${JSON.stringify(address)}`);
+  }
+});
+
+check("a building name after the street type is dropped, not kept", () => {
+  // Keeping it means the OpenStreetMap lookup finds nothing and the practice
+  // falls back to a guess, which is the failure this whole step exists to fix.
+  assert.equal(osmStreetName("550 King St N Conestoga Mall"), "King Street North");
+  assert.equal(
+    osmStreetName("1151 Richmond St #DSB 0160H, GA Suite Schulich School"),
+    "Richmond Street",
+  );
+});
+
+check("an address with nothing usable gives nothing, not a wrong answer", () => {
+  assert.equal(streetFrom(undefined), undefined);
+  assert.equal(streetFrom(""), undefined);
+  assert.equal(osmStreetName("#205"), undefined);
+});
+
+console.log("\nLocating streets");
+check("a long road collapses to one place, a repeated name stays several", () => {
+  // Yonge Street as a run of ways a few hundred metres apart, plus a Main
+  // Street in Hamilton and another in Ottawa 500 km away.
+  const oneRoad = Array.from({ length: 30 }, (_, i) => ({
+    lat: 43.65 + i * 0.002,
+    lng: -79.383,
+  }));
+  assert.equal(clusterPoints(oneRoad).length, 1, "one road is one place");
+
+  const twoRoads = [
+    { lat: 43.256, lng: -79.871 },
+    { lat: 43.257, lng: -79.872 },
+    { lat: 45.421, lng: -75.697 },
+  ];
+  const clusters = clusterPoints(twoRoads);
+  assert.equal(clusters.length, 2, "two roads of one name stay two places");
+  assert.equal(clusters[0].ways, 2, "the larger cluster comes first");
+});
+
+check("a cluster's centre is the mean of its ways, not its first point", () => {
+  const [only] = clusterPoints([
+    { lat: 43.0, lng: -79.0 },
+    { lat: 43.02, lng: -79.0 },
+  ]);
+  assert.ok(Math.abs(only.lat - 43.01) < 1e-6, `centre was ${only.lat}`);
+});
+
+check("street names come from the addresses, commonest first", () => {
+  const records = [
+    { address: "1 Yonge St" },
+    { address: "2 Yonge St" },
+    { address: "3 Bay St" },
+    { address: "#4" },
+  ] as never;
+  assert.deepEqual(streetNamesFrom(records), ["Yonge Street", "Bay Street"]);
 });
 
 /* ------------------------------------------------------ the canonical host */
